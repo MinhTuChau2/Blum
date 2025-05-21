@@ -143,3 +143,19 @@
   object-fit: contain;
   filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.3));
 }
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rotating-flower {
+  animation-name: rotate;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-fill-mode: forwards;
+}
