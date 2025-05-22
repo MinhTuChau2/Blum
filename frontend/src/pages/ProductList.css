@@ -31,8 +31,9 @@
 .products-list li {
   background-color: #fff;
   padding: 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.08);
+  border:2px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.07);
   transition: transform 0.2s;
 }
 
@@ -60,4 +61,13 @@
   height: auto;
   border-radius: 6px;
   object-fit: cover;
+}
+
+/* Category Filter Dropdown */
+.category-filter {
+  margin-bottom: 1.5rem;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
 }

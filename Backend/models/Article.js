@@ -1,10 +1,15 @@
 const mongoose = require('mongoose');
 
-const articleSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  content: { type: String, required: true },
-  author: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now }
-});
+const articleSchema = new mongoose.Schema(
+  {
+    title: String,
+    author: String,
+    content: String,
+    image: String,
+  },
+  {
+    timestamps: true, // ✅ Adds createdAt and updatedAt
+  }
+);
 
 module.exports = mongoose.model('Article', articleSchema);

@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './AddArticle.css';
+
 const AddArticle = () => {
   const [articles, setArticles] = useState([]);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [author, setAuthor] = useState('');
+  const [image, setImage] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState('');
 
-  // Fetch all articles
   useEffect(() => {
     fetchArticles();
   }, []);
@@ -22,10 +24,41 @@ const AddArticle = () => {
     }
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('image', file);
+
+    setIsUploading(true);
+    try {
+      const res = await axios.post('http://localhost:5000/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setImage(res.data.imageUrl); // assuming the backend returns { imageUrl: '...' }
+      setMessage('✅ Image uploaded successfully');
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      setMessage('❌ Failed to upload image');
+    } finally {
+      setIsUploading(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const newArticle = { title, content, author };
+    if (isUploading) {
+      setMessage('⏳ Please wait until the image is done uploading...');
+      return;
+    }
+
+    const newArticle = {
+      title,
+      content,
+      author,
+      image: image || '', // Always include image, even if empty
+    };
 
     try {
       await axios.post('http://localhost:5000/articles', newArticle);
@@ -33,6 +66,7 @@ const AddArticle = () => {
       setTitle('');
       setContent('');
       setAuthor('');
+      setImage('');
       fetchArticles();
     } catch (err) {
       console.error('Error adding article:', err);
@@ -58,7 +92,7 @@ const AddArticle = () => {
   return (
     <div style={{ maxWidth: '600px', margin: 'auto', padding: '1rem' }}>
       <h2>Add Article</h2>
-      {message && <p style={{ color: 'green' }}>{message}</p>}
+      {message && <p style={{ color: message.startsWith('✅') ? 'green' : message.startsWith('🗑️') ? 'orange' : 'red' }}>{message}</p>}
 
       <form onSubmit={handleSubmit} style={{ marginBottom: '2rem' }}>
         <input
@@ -77,6 +111,16 @@ const AddArticle = () => {
           onChange={(e) => setAuthor(e.target.value)}
           style={styles.input}
         />
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          style={styles.input}
+        />
+        {isUploading && <p style={{ fontSize: '0.9rem', color: 'orange' }}>⏳ Uploading image...</p>}
+        {image && !isUploading && (
+          <p style={{ fontSize: '0.9rem', color: 'green' }}>✅ Image uploaded</p>
+        )}
         <textarea
           placeholder="Content"
           value={content}
@@ -84,26 +128,46 @@ const AddArticle = () => {
           onChange={(e) => setContent(e.target.value)}
           style={styles.textarea}
         />
-        <button type="submit" style={styles.button}>Add Article</button>
+        <button type="submit" style={styles.button} disabled={isUploading}>
+          {isUploading ? 'Uploading...' : 'Add Article'}
+        </button>
       </form>
 
       <h3>Articles List</h3>
-      {articles.length === 0 ? (
-        <p>No articles available.</p>
-      ) : (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {articles.map((article) => (
-            <li key={article.id || article._id} style={styles.article}>
-              <h4>{article.title}</h4>
-              <p><strong>Author:</strong> {article.author}</p>
-              <p>{article.content}</p>
-              <button onClick={() => handleDelete(article.id || article._id)} style={styles.deleteButton}>
-                Delete
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+     {articles.length === 0 ? (
+  <p>No articles available.</p>
+) : (
+  <ul style={{ listStyle: 'none', padding: 0 }}>
+    {[...articles]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Sort by newest first
+      .map((article) => (
+        <li key={article._id} style={styles.article}>
+          <h4>{article.title}</h4>
+          <p><strong>Author:</strong> {article.author}</p>
+          {article.image && (
+            <img
+              src={article.image}
+              alt={article.title}
+              style={{
+                width: '100%',
+                maxHeight: '250px',
+                objectFit: 'cover',
+                marginBottom: '1rem',
+              }}
+            />
+          )}
+          <p>{article.content}</p>
+          <button
+            onClick={() => handleDelete(article._id)}
+            style={styles.deleteButton}
+          >
+            Delete
+          </button>
+        </li>
+      ))}
+  </ul>
+)}
+
     </div>
   );
 };

@@ -11,7 +11,15 @@ const ArticlesList = () => {
     const fetchArticles = async () => {
       try {
         const res = await axios.get('http://localhost:5000/articles');
-        setArticles(res.data);
+        const processedArticles = res.data
+          .map(article => ({
+            ...article,
+            image: article.image && !article.image.startsWith('http')
+              ? `http://localhost:5000/${article.image}`
+              : article.image
+          }))
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // ✅ Sort by newest
+        setArticles(processedArticles);
       } catch (err) {
         console.error(err);
         setError('Failed to load articles');
@@ -61,6 +69,15 @@ const ArticlesList = () => {
             <div key={article._id} style={styles.article}>
               <h3 style={styles.title}>{article.title}</h3>
               <p style={styles.author}><strong>Author:</strong> {article.author}</p>
+
+              {article.image && (
+                <img
+                  src={article.image}
+                  alt={article.title}
+                  style={styles.image}
+                />
+              )}
+
               <p style={styles.content}>
                 {isExpanded ? article.content : previewContent}
               </p>
@@ -79,7 +96,7 @@ const ArticlesList = () => {
 
 const styles = {
   article: {
-    border: '1px solid #ccc',
+    border: '2px solid #333',
     borderRadius: '8px',
     backgroundColor: 'white',
     padding: '1.5rem',
@@ -109,6 +126,13 @@ const styles = {
     border: 'none',
     borderRadius: '4px',
     cursor: 'pointer',
+  },
+  image: {
+    width: '100%',
+    height: 'auto',
+    marginBottom: '1rem',
+    borderRadius: '8px',
+    objectFit: 'cover',
   }
 };
 
