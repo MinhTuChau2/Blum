@@ -8,6 +8,8 @@ require('dotenv').config();
 const Product = require('./models/Product');
 const Article = require('./models/Article');
 const User = require('./models/User');
+const fs = require('fs');
+const About = require('./models/About');
 
 const app = express();
 
@@ -187,6 +189,89 @@ app.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+const aboutUpload = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/about/'),
+  filename: (req, file, cb) =>
+    cb(null, Date.now() + path.extname(file.originalname)),
+});
+const aboutUploader = multer({ storage: aboutUpload });
+
+// Ensure uploads/about directory exists
+if (!fs.existsSync('uploads/about')) {
+  fs.mkdirSync('uploads/about', { recursive: true });
+}
+
+// GET current about content
+app.get('/about', async (req, res) => {
+  try {
+    let about = await About.findOne();
+    if (!about) {
+      about = new About({ text: '', media: [] });
+      await about.save();
+    }
+    res.json(about);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch about content' });
+  }
+});
+
+// PUT update about content
+app.put('/about', aboutUploader.array('media'), async (req, res) => {
+  try {
+    let about = await About.findOne();
+    if (!about) {
+      about = new About();
+    }
+
+    about.text = req.body.text || '';
+
+    // Handle media uploads
+    if (req.files && req.files.length > 0) {
+      const filenames = req.files.map((file) => file.filename);
+      about.media.push(...filenames);
+    }
+
+    // Handle external links (support both array and single string)
+    if (req.body.externalLinks) {
+      if (Array.isArray(req.body.externalLinks)) {
+        about.externalLinks = req.body.externalLinks;
+      } else {
+        about.externalLinks = [req.body.externalLinks];
+      }
+    }
+
+    await about.save();
+    res.json(about);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update about content' });
+  }
+});
+
+// DELETE media file
+app.delete('/about/media/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+
+    const about = await About.findOne();
+    if (!about) return res.status(404).json({ error: 'About not found' });
+
+    about.media = about.media.filter((f) => f !== filename);
+    await about.save();
+
+    const filepath = path.join(__dirname, 'uploads/about/', filename);
+    fs.unlink(filepath, (err) => {
+      if (err) console.warn('File deletion failed:', err);
+    });
+
+    res.status(200).json({ message: 'Media deleted' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete media' });
+  }
+});
+
 
 // --- Start Server ---
 const PORT = process.env.PORT || 5000;

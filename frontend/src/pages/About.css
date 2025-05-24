@@ -1,0 +1,115 @@
+.about-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: 'Arial', sans-serif;
+  color: #333;
+  text-align: left;
+}
+
+.about-container h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #222;
+  padding-bottom: 0.5rem;
+}
+
+.about-container h3 {
+  font-size: 1.5rem;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  color: black;
+}
+
+.about-container p {
+  line-height: 1.6;
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  white-space: pre-line;
+}
+
+.about-container ul {
+  list-style: none;
+  padding: 0;
+}
+
+.about-container li {
+  margin-bottom: 2rem;
+}
+
+/* Gallery section */
+.about-container .gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.about-container .gallery img,
+.about-container .gallery video {
+  width: 200px;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Grid for external embeds */
+.embed-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.embed-grid li {
+  margin: 0;
+}
+
+/* TikTok */
+.tiktok-embed {
+  width: 100% !important;
+  max-width: 325px;
+  margin: 0 auto !important;
+}
+
+/* Instagram */
+.instagram-media {
+  max-width: 300px !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+
+  /* Add this to increase vertical space */
+  min-height: 550px !important; /* adjust to preferred height */
+  padding-bottom: 1rem; /* space below */
+}
+
+/* YouTube */
+.about-container iframe {
+  width: 100% !important;
+  max-width: 360px;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: block;
+  margin: 0 auto;
+}
+
+/* Responsive layout */
+@media (max-width: 600px) {
+  .about-container {
+    padding: 1rem;
+  }
+
+  .about-container h2 {
+    font-size: 1.5rem;
+  }
+
+  .about-container h3 {
+    font-size: 1.25rem;
+  }
+
+  .about-container .gallery img,
+  .about-container .gallery video {
+    width: 100%;
+  }
+}

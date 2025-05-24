@@ -6,6 +6,7 @@ import AddArticle from './AddArticle';
 import AddUser from './AddUser';
 import Login from './Login';
 import ProtectedRoute from './ProtectedRoute';
+import AddAbout from './AddAbout';
 
 function App() {
   const [auth, setAuth] = useState(false);
@@ -35,6 +36,11 @@ function App() {
           <Link to="/add-user" style={{ marginRight: 10 }}>
             Add User
           </Link>
+          <Link to="/add-about" style={{ marginRight: 10 }}>
+            Add About
+          </Link>
+
+
           <button onClick={handleLogout} style={{ marginLeft: 20 }}>
             Logout
           </button>
@@ -71,6 +77,14 @@ function App() {
             <ProtectedRoute auth={auth}>
               <AddUser />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/add-about"
+          element={
+          <ProtectedRoute auth={auth}>
+          <AddAbout />
+          </ProtectedRoute>
           }
         />
 

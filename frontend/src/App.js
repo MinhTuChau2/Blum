@@ -3,6 +3,7 @@ import ProductsList from './pages/ProductsList';
 import ArticlesList from './pages/ArticlesList';
 import './App.css';
 import './pages/ProductList.css';
+import About from './pages/About';
 import logo from './assets/Blum_logo2.png';
 import productsIcon from './assets/products.png';
 import articlesIcon from './assets/articles.png';
@@ -11,6 +12,8 @@ import flower2 from './assets/orange_flower.png';
 import flower3 from './assets/pink_flower.png';
 import flower4 from './assets/purple_flower.png';
 import flower5 from './assets/red_flower.png';
+import aboutIcon from './assets/About.png'; // Adjust the path if needed
+
 
 function RotatingFlowers({ zIndex }) {
   const flowerImages = [flower1, flower2, flower3, flower4, flower5];
@@ -81,12 +84,21 @@ function AppWrapper() {
         style={{ width: '200px', height: '97px' }}
       />
     </Link>
+     <Link to="/about">
+    <img
+      src={aboutIcon}
+      alt="About"
+      style={{ width: '220px', height: '97px' }}
+    />
+  </Link>
   </nav>
 
   <main className="content">
     <Routes>
       <Route path="/" element={<ProductsList />} />
       <Route path="/articles" element={<ArticlesList />} />
+      <Route path="/about" element={<About />} />
+
     </Routes>
   </main>
   </div>
