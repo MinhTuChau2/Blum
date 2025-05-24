@@ -141,7 +141,7 @@ const About = () => {
       {/* External Links and Embeds */}
       {externalLinks.length > 0 && (
         <>
-          <h3 style={{ marginTop: '2rem' }}>External Links</h3>
+          <h3 style={{ marginTop: '2rem' }}>Digital Footprints</h3>
           <ul style={{ listStyle: 'none', padding: 0 }}>
             <ul className="embed-grid">
             {externalLinks.map((link, index) => {
