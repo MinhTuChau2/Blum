@@ -10,7 +10,7 @@ const About = () => {
   useEffect(() => {
     const fetchAbout = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/about');
+        const res = await axios.get('https://blum-backend.onrender.com/about');
         setText(res.data.text || '');
         setMedia(res.data.media || []);
         setExternalLinks(res.data.externalLinks || []);
@@ -122,7 +122,7 @@ const About = () => {
             {media.map((item, index) => {
               const fileUrl = item.startsWith('http')
                 ? item
-                : `http://localhost:5000/uploads/about/${item}`;
+                : `https://blum-backend.onrender.com/uploads/about/${item}`;
 
               return (
                 <div key={index}>

@@ -10,12 +10,12 @@ const ArticlesList = () => {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/articles');
+        const res = await axios.get('https://blum-backend.onrender.com/articles');
         const processedArticles = res.data
           .map(article => ({
             ...article,
             image: article.image && !article.image.startsWith('http')
-              ? `http://localhost:5000/${article.image}`
+              ? `https://blum-backend.onrender.com/${article.image}`
               : article.image
           }))
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // ✅ Sort by newest

@@ -10,13 +10,13 @@ const AdminOrders = () => {
   }, []);
 
   const fetchOrders = () => {
-    axios.get('http://localhost:5000/orders')
+    axios.get('https://blum-backend.onrender.com/orders')
       .then(res => setOrders(res.data))
       .catch(err => console.error('Error fetching orders:', err));
   };
 
   const handleStatusChange = (orderId, newStatus) => {
-    axios.put(`http://localhost:5000/orders/${orderId}/status`, { status: newStatus })
+    axios.put(`https://blum-backend.onrender.com/orders/${orderId}/status`, { status: newStatus })
       .then(() => {
         setOrders(prev =>
           prev.map(order =>
@@ -30,7 +30,7 @@ const AdminOrders = () => {
   const handleDelete = (orderId) => {
     if (!window.confirm('Are you sure you want to delete this order?')) return;
 
-    axios.delete(`http://localhost:5000/orders/${orderId}`)
+    axios.delete(`https://blum-backend.onrender.com/orders/${orderId}`)
       .then(() => {
         setOrders(prevOrders => prevOrders.filter(order => order._id !== orderId));
       })

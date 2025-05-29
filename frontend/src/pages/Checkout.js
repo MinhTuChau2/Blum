@@ -24,7 +24,7 @@ const Checkout = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/orders', {
+      const response = await fetch('https://blum-backend.onrender.com/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

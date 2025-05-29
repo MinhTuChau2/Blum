@@ -10,7 +10,7 @@ const ProductsList = () => {
 
   // Load products
   useEffect(() => {
-    axios.get('http://localhost:5000/products')
+    axios.get('https://blum-backend.onrender.com/products')
       .then(res => setProducts(res.data))
       .catch(err => console.error(err));
   }, []);

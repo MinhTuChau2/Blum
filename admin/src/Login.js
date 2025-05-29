@@ -15,7 +15,7 @@ const Login = ({ setAuth }) => {
     setLoginSuccess('');
 
     try {
-      const res = await axios.post('http://localhost:5000/login', {
+      const res = await axios.post('https://blum-backend.onrender.com/login', {
         username: loginUsername.trim(),
         password: loginPassword.trim(),
       });
