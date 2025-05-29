@@ -1,0 +1,69 @@
+/* Container padding */
+.admin-orders-container {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Order list */
+.admin-orders-list {
+  list-style: none;
+  padding: 0;
+}
+
+/* Each order item */
+.admin-orders-list li {
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  padding: 15px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Order ID, email, status labels */
+.admin-orders-list strong {
+  color: #333;
+}
+
+/* Status dropdown */
+.admin-orders-list select {
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  margin-left: 10px;
+}
+
+/* Items list inside order */
+.admin-orders-list ul {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding-left: 20px;
+  color: #555;
+}
+
+/* Delete button styling */
+.admin-orders-delete-btn {
+  margin-top: 10px;
+  color: white;
+  background-color: #d9534f; /* Bootstrap danger red */
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+/* Hover effect on delete button */
+.admin-orders-delete-btn:hover {
+  background-color: #c9302c;
+}
+
+/* Horizontal rule styling */
+.admin-orders-list hr {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin-top: 15px;
+}

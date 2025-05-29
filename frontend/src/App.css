@@ -75,17 +75,19 @@
   }
 
   .sidebar {
-    flex-direction: row;
-    justify-content: space-around;
-    min-width: 100%;
-    padding: 0.5rem 1rem;
-   
-  
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem; /* optional spacing */
   }
 
   .sidebar a img {
-    width: 36px;
-    height: 36px;
+    width: 80px;
+    height: auto;
+  }
+  .sidebar-icon {
+    width: 30px;
+    height: 30px;
+    margin-bottom: 0;
   }
 
   .content {

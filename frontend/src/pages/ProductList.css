@@ -9,13 +9,13 @@
 .products-container h2 {
   font-size: 2rem;
   margin-bottom: 1.5rem;
-  color: #333;
+  color: #000000;
 }
 
 /* Message when no products */
 .products-container p {
   font-size: 1rem;
-  color: #666;
+  color: #000000;
 }
 
 /* Product list styling */
@@ -65,9 +65,79 @@
 
 /* Category Filter Dropdown */
 .category-filter {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.01rem;
   padding: 0.5rem;
   font-size: 1rem;
   border-radius: 6px;
   border: 1px solid #ccc;
+}
+
+
+.remove-btn {
+  margin-left: 1rem;
+  padding: 0.3rem 0.6rem;
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.remove-btn:hover {
+  background-color: #c0392b;
+}
+
+.add-btn {
+  padding: 0.5rem 1rem;
+  background-color: black;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-weight: bold;
+}
+
+.add-btn:hover {
+  background-color: #27ae60;
+}
+.main-content {
+  display: flex;
+  gap: 2rem;
+}
+
+.products-list {
+  flex: 2;
+}
+
+.cart {
+  flex: 1;
+  padding: 1rem;
+  border: 2px solid black;
+  border-radius: 8px;
+  background-color: white;
+  margin-top: 1rem;
+}
+
+.cart h3 {
+  margin-top: 0;
+}
+
+.cart ul {
+  list-style: none;
+  padding: 0;
+}
+
+.cart li {
+  margin-bottom: 1rem;
+}
+
+.cart button {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 1rem;
 }

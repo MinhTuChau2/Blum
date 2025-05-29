@@ -1,30 +1,64 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import './ProductList.css'; // Make sure the filename matches exactly
+import Cart from './Cart'; // Make sure this component exists
+import './ProductList.css';
 
 const ProductsList = () => {
   const [products, setProducts] = useState([]);
+  const [cart, setCart] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
 
+  // Load products
   useEffect(() => {
     axios.get('http://localhost:5000/products')
       .then(res => setProducts(res.data))
       .catch(err => console.error(err));
   }, []);
 
-  // Get unique categories
-  const categories = ['All', ...new Set(products.map(p => p.category).filter(Boolean))];
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    const savedCart = JSON.parse(localStorage.getItem('cart')) || [];
+    setCart(savedCart);
+  }, []);
 
-  // Filter products by selected category
+  // Update localStorage when cart changes
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }, [cart]);
+
+  // Filter logic
+  const categories = ['All', ...new Set(products.map(p => p.category).filter(Boolean))];
   const filteredProducts = selectedCategory === 'All'
     ? products
     : products.filter(p => p.category === selectedCategory);
+
+  // Add to cart
+  const addToCart = (product) => {
+    setCart(prevCart => {
+      const existingItem = prevCart.find(item => item._id === product._id);
+      if (existingItem) {
+        return prevCart.map(item =>
+          item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      } else {
+        return [...prevCart, { ...product, quantity: 1 }];
+      }
+    });
+  };
+
+  // Remove from cart
+  const removeFromCart = (id) => {
+    setCart(prevCart =>
+      prevCart
+        .map(item => item._id === id ? { ...item, quantity: item.quantity - 1 } : item)
+        .filter(item => item.quantity > 0)
+    );
+  };
 
   return (
     <div className="products-container">
       <h2>Products</h2>
 
-      {/* Category Filter */}
       <select
         value={selectedCategory}
         onChange={(e) => setSelectedCategory(e.target.value)}
@@ -35,9 +69,10 @@ const ProductsList = () => {
         ))}
       </select>
 
-      {filteredProducts.length === 0 ? (
-        <p>No products available</p>
-      ) : (
+      {/* Cart Component */}
+      <Cart cart={cart} removeFromCart={removeFromCart} />
+
+      <div className="main-content">
         <ul className="products-list">
           {filteredProducts.map(p => (
             <li key={p._id}>
@@ -46,10 +81,11 @@ const ProductsList = () => {
               <p>{p.description}</p>
               {p.imageUrl && <img src={p.imageUrl} alt={p.name} />}
               <p>Category: {p.category}</p>
+              <button className="add-btn" onClick={() => addToCart(p)}>Add to Cart</button>
             </li>
           ))}
         </ul>
-      )}
+      </div>
     </div>
   );
 };

@@ -13,8 +13,8 @@ import flower3 from './assets/pink_flower.png';
 import flower4 from './assets/purple_flower.png';
 import flower5 from './assets/red_flower.png';
 import aboutIcon from './assets/About.png'; // Adjust the path if needed
-
-
+import Checkout from './pages/Checkout';
+import Success from './pages/Success';
 function RotatingFlowers({ zIndex }) {
   const flowerImages = [flower1, flower2, flower3, flower4, flower5];
   const flowerCount = 7;
@@ -88,7 +88,7 @@ function AppWrapper() {
     <img
       src={aboutIcon}
       alt="About"
-      style={{ width: '220px', height: '97px' }}
+      style={{ width: '200px', height: '95px' }}
     />
   </Link>
   </nav>
@@ -98,6 +98,8 @@ function AppWrapper() {
       <Route path="/" element={<ProductsList />} />
       <Route path="/articles" element={<ArticlesList />} />
       <Route path="/about" element={<About />} />
+      <Route path="/success" element={<Success />} />
+        <Route path="/checkout" element={<Checkout />} />
 
     </Routes>
   </main>

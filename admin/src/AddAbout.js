@@ -81,20 +81,47 @@ function AddAbout() {
           />
         </div>
         <div className="form-group">
-  <label>Add TikTok or external media links:</label>
+  <label>Add external media links:</label>
   {externalLinks.map((link, index) => (
-    <input
-      key={index}
-      type="text"
-      placeholder="https://www.tiktok.com/@user/video/..."
-      value={link}
-      onChange={(e) => {
-        const newLinks = [...externalLinks];
-        newLinks[index] = e.target.value;
-        setExternalLinks(newLinks);
-      }}
-      style={{ marginBottom: '0.5rem', width: '100%' }}
-    />
+    <div key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+      <input
+        type="text"
+        placeholder="link..."
+        value={link}
+        onChange={(e) => {
+          const newLinks = [...externalLinks];
+          newLinks[index] = e.target.value;
+          setExternalLinks(newLinks);
+        }}
+        style={{ flex: 1, marginRight: '0.5rem' }}
+      />
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <button
+          type="button"
+          disabled={index === 0}
+          onClick={() => {
+            const newLinks = [...externalLinks];
+            [newLinks[index - 1], newLinks[index]] = [newLinks[index], newLinks[index - 1]];
+            setExternalLinks(newLinks);
+          }}
+          style={{ marginBottom: '2px', fontSize: '0.75rem' }}
+        >
+          ↑
+        </button>
+        <button
+          type="button"
+          disabled={index === externalLinks.length - 1}
+          onClick={() => {
+            const newLinks = [...externalLinks];
+            [newLinks[index + 1], newLinks[index]] = [newLinks[index], newLinks[index + 1]];
+            setExternalLinks(newLinks);
+          }}
+          style={{ fontSize: '0.75rem' }}
+        >
+          ↓
+        </button>
+      </div>
+    </div>
   ))}
   <button
     type="button"
@@ -104,6 +131,7 @@ function AddAbout() {
     + Add Another Link
   </button>
 </div>
+
 
 
         <div className="form-group">

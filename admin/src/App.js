@@ -7,6 +7,7 @@ import AddUser from './AddUser';
 import Login from './Login';
 import ProtectedRoute from './ProtectedRoute';
 import AddAbout from './AddAbout';
+import AdminOrders from './AdminOrders';
 
 function App() {
   const [auth, setAuth] = useState(false);
@@ -39,8 +40,9 @@ function App() {
           <Link to="/add-about" style={{ marginRight: 10 }}>
             Add About
           </Link>
-
-
+          <Link to="/admin-orders" style={{ marginRight: 10 }}>
+           View Orders
+          </Link>
           <button onClick={handleLogout} style={{ marginLeft: 20 }}>
             Logout
           </button>
@@ -87,6 +89,15 @@ function App() {
           </ProtectedRoute>
           }
         />
+        <Route
+         path="/admin-orders"
+         element={
+        <ProtectedRoute auth={auth}>
+        <AdminOrders />
+        </ProtectedRoute>
+  }
+/>
+
 
         {/* Fallback route */}
         <Route path="*" element={<Navigate to={auth ? '/add-product' : '/login'} replace />} />

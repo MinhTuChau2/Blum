@@ -1,0 +1,36 @@
+.checkout-container {
+  padding: 2rem;
+  max-width: 600px;
+  margin: auto;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.checkout-container h2 {
+  margin-bottom: 1rem;
+}
+
+.checkout-container ul {
+  list-style: none;
+  padding: 0;
+}
+
+.checkout-container li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #ccc;
+}
+
+.checkout-container button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background:Black;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.checkout-container button:hover {
+  background: green;
+}

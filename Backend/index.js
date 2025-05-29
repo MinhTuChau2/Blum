@@ -10,7 +10,7 @@ const Article = require('./models/Article');
 const User = require('./models/User');
 const fs = require('fs');
 const About = require('./models/About');
-
+const Order = require('./models/Order');
 const app = express();
 
 // Middleware
@@ -272,6 +272,79 @@ app.delete('/about/media/:filename', async (req, res) => {
   }
 });
 
+// Orders
+
+app.post('/orders', async (req, res) => {
+  try {
+    const { customerEmail, items, total } = req.body;
+
+    if (!customerEmail) {
+      return res.status(400).json({ error: 'Customer email is required' });
+    }
+
+    const order = new Order({
+      customerEmail,
+      items,
+      total,
+      status: 'pending', // default
+    });
+
+    await order.save();
+    res.status(201).json(order);
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({ error: 'Failed to create order' });
+  }
+});
+
+app.get('/orders', async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+app.put('/orders/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    if (!['pending', 'received', 'sent'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status value' });
+    }
+
+    const updatedOrder = await Order.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    res.json(updatedOrder);
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    res.status(500).json({ error: 'Failed to update order status' });
+  }
+});
+
+app.delete('/orders/:id', async (req, res) => {
+  try {
+    const deletedOrder = await Order.findByIdAndDelete(req.params.id);
+
+    if (!deletedOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    res.status(200).json({ message: 'Order deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    res.status(500).json({ error: 'Failed to delete order' });
+  }
+});
 
 // --- Start Server ---
 const PORT = process.env.PORT || 5000;
