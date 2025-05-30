@@ -1,4 +1,3 @@
-
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -6,6 +5,7 @@ const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 const streamifier = require('streamifier'); // for streaming buffer to Cloudinary
 require('dotenv').config();
+const path = require('path');
 
 const Product = require('./models/Product');
 const Article = require('./models/Article');
@@ -41,7 +41,7 @@ mongoose.connect(process.env.MONGO_URI, {
 app.post('/upload', upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-  let cld_upload_stream = cloudinary.uploader.upload_stream(
+  const cld_upload_stream = cloudinary.uploader.upload_stream(
     { folder: 'your_folder_name' },
     (error, result) => {
       if (error) {
@@ -49,14 +49,16 @@ app.post('/upload', upload.single('image'), (req, res) => {
         return res.status(500).json({ error: 'Cloudinary upload failed' });
       }
 
-      console.log('Cloudinary upload result:', result); // <--- log this
+      // Save the Cloudinary URL to your database here
+      // e.g. YourModel.create({ imageUrl: result.secure_url }) or update existing
 
-      res.json({ imageUrl: result.secure_url });
+      res.json({ imageUrl: result.secure_url });  // <-- This is the Cloudinary URL
     }
   );
 
   streamifier.createReadStream(req.file.buffer).pipe(cld_upload_stream);
 });
+
 
 // --- Article Routes ---
 
