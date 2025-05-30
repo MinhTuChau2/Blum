@@ -236,28 +236,31 @@ app.get('/about', async (req, res) => {
 });
 
 // PUT update about content
-app.put('/about', aboutUploader.array('media'), async (req, res) => {
+app.put('/about', upload.array('media'), async (req, res) => {
   try {
     let about = await About.findOne();
-    if (!about) {
-      about = new About();
-    }
+    if (!about) about = new About();
 
     about.text = req.body.text || '';
 
-    // Handle media uploads
+    // Upload media files to Cloudinary
     if (req.files && req.files.length > 0) {
-      const filenames = req.files.map((file) => file.filename);
-      about.media.push(...filenames);
+      const uploadPromises = req.files.map(file =>
+        cloudinary.uploader.upload_stream({ resource_type: "auto" }, (error, result) => {
+          if (error) throw error;
+          return result.secure_url;
+        }).end(file.buffer)
+      );
+
+      const uploadedUrls = await Promise.all(uploadPromises);
+      about.media.push(...uploadedUrls);
     }
 
-    // Handle external links (support both array and single string)
+    // Handle external links
     if (req.body.externalLinks) {
-      if (Array.isArray(req.body.externalLinks)) {
-        about.externalLinks = req.body.externalLinks;
-      } else {
-        about.externalLinks = [req.body.externalLinks];
-      }
+      about.externalLinks = Array.isArray(req.body.externalLinks)
+        ? req.body.externalLinks
+        : [req.body.externalLinks];
     }
 
     await about.save();
