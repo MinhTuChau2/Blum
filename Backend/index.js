@@ -210,9 +210,9 @@ app.post('/login', async (req, res) => {
 });
 
 //const aboutUpload = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/about/'),
-  filename: (req, file, cb) =>
-    cb(null, Date.now() + path.extname(file.originalname)),
+  //destination: (req, file, cb) => cb(null, 'uploads/about/'),
+ // filename: (req, file, cb) =>
+   // cb(null, Date.now() + path.extname(file.originalname)),
 //});
 //const aboutUploader = multer({ storage: aboutUpload });
 
