@@ -209,17 +209,17 @@ app.post('/login', async (req, res) => {
   }
 });
 
-const aboutUpload = multer.diskStorage({
+//const aboutUpload = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/about/'),
   filename: (req, file, cb) =>
     cb(null, Date.now() + path.extname(file.originalname)),
-});
-const aboutUploader = multer({ storage: aboutUpload });
+//});
+//const aboutUploader = multer({ storage: aboutUpload });
 
 // Ensure uploads/about directory exists
-if (!fs.existsSync('uploads/about')) {
-  fs.mkdirSync('uploads/about', { recursive: true });
-}
+//if (!fs.existsSync('uploads/about')) {
+ // fs.mkdirSync('uploads/about', { recursive: true });
+//}
 
 // GET current about content
 app.get('/about', async (req, res) => {
@@ -235,32 +235,46 @@ app.get('/about', async (req, res) => {
   }
 });
 
-// PUT update about content
+
+// PUT update about content with Cloudinary upload
 app.put('/about', upload.array('media'), async (req, res) => {
   try {
     let about = await About.findOne();
-    if (!about) about = new About();
+    if (!about) {
+      about = new About();
+    }
 
     about.text = req.body.text || '';
 
-    // Upload media files to Cloudinary
+    // Upload media files to Cloudinary if any
     if (req.files && req.files.length > 0) {
-      const uploadPromises = req.files.map(file =>
-        cloudinary.uploader.upload_stream({ resource_type: "auto" }, (error, result) => {
-          if (error) throw error;
-          return result.secure_url;
-        }).end(file.buffer)
-      );
+      const uploadPromises = req.files.map(file => {
+        return new Promise((resolve, reject) => {
+          const cld_upload_stream = cloudinary.uploader.upload_stream(
+            { folder: 'about_media' },
+            (error, result) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve(result.secure_url);
+              }
+            }
+          );
+          streamifier.createReadStream(file.buffer).pipe(cld_upload_stream);
+        });
+      });
 
       const uploadedUrls = await Promise.all(uploadPromises);
       about.media.push(...uploadedUrls);
     }
 
-    // Handle external links
+    // Handle external links (support both array and single string)
     if (req.body.externalLinks) {
-      about.externalLinks = Array.isArray(req.body.externalLinks)
-        ? req.body.externalLinks
-        : [req.body.externalLinks];
+      if (Array.isArray(req.body.externalLinks)) {
+        about.externalLinks = req.body.externalLinks;
+      } else {
+        about.externalLinks = [req.body.externalLinks];
+      }
     }
 
     await about.save();
@@ -271,28 +285,32 @@ app.put('/about', upload.array('media'), async (req, res) => {
   }
 });
 
-// DELETE media file
-app.delete('/about/media/:filename', async (req, res) => {
+// DELETE media URL from about.media
+app.delete('/about/media', async (req, res) => {
   try {
-    const { filename } = req.params;
+    const { url } = req.body; // URL to delete from media array
+
+    if (!url) return res.status(400).json({ error: 'Media URL required' });
 
     const about = await About.findOne();
     if (!about) return res.status(404).json({ error: 'About not found' });
 
-    about.media = about.media.filter((f) => f !== filename);
+    about.media = about.media.filter(mediaUrl => mediaUrl !== url);
     await about.save();
 
-    const filepath = path.join(__dirname, 'uploads/about/', filename);
-    fs.unlink(filepath, (err) => {
-      if (err) console.warn('File deletion failed:', err);
-    });
+    // Optionally, delete the image from Cloudinary by public_id if you want.
+    // This requires extracting public_id from the URL.
+    // Example: https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg
+    // public_id = sample (without extension)
+    // You can implement this if needed.
 
-    res.status(200).json({ message: 'Media deleted' });
+    res.status(200).json({ message: 'Media URL removed' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to delete media' });
   }
 });
+
 
 // Orders
 
