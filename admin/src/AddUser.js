@@ -12,7 +12,7 @@ const AddUser = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/users', user);
+      await axios.post('https://blum-backend.onrender.com/users', user);
       setMessage('✅ User created successfully!');
       setUser({ username: '', password: '' });
     } catch (err) {

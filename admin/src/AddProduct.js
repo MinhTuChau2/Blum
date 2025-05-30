@@ -16,7 +16,7 @@ const AddProduct = () => {
   // Fetch products from backend
   const fetchProducts = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/products');
+      const res = await axios.get('https://blum-backend.onrender.com/products');
       setProducts(res.data);
     } catch (error) {
       console.error('Failed to fetch products:', error);
@@ -37,7 +37,7 @@ const AddProduct = () => {
     formData.append('image', file);
 
     try {
-      const res = await axios.post('http://localhost:5000/upload', formData, {
+      const res = await axios.post('https://blum-backend.onrender.com/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -52,7 +52,7 @@ const AddProduct = () => {
   const handleSubmit = async e => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/products', product);
+      await axios.post('https://blum-backend.onrender.com/products', product);
       alert('✅ Product added successfully!');
       setProduct({ name: '', price: '', description: '', imageUrl: '', category: '' });
       fetchProducts(); // refresh list
@@ -65,7 +65,7 @@ const AddProduct = () => {
   const handleDelete = async id => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
-        await axios.delete(`http://localhost:5000/products/${id}`);
+        await axios.delete(`https://blum-backend.onrender.com/products/${id}`);
         alert('🗑️ Product deleted!');
         fetchProducts(); // refresh list
       } catch (error) {

@@ -12,7 +12,7 @@ function AddAbout() {
   useEffect(() => {
     const fetchAbout = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/about');
+        const res = await axios.get('https://blum-backend.onrender.com/about');
         setText(res.data.text || '');
         setMedia(res.data.media || []);
         setExternalLinks(res.data.externalLinks || ['']);
@@ -38,7 +38,7 @@ function AddAbout() {
   });
 
   try {
-    await axios.put('http://localhost:5000/about', formData, {
+    await axios.put('https://blum-backend.onrender.com/about', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -55,7 +55,7 @@ function AddAbout() {
 
   const handleDeleteMedia = async (filename) => {
     try {
-      await axios.delete(`http://localhost:5000/about/media/${filename}`, {
+      await axios.delete(`https://blum-backend.onrender.com/about/media/${filename}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
@@ -168,9 +168,9 @@ function AddAbout() {
           return (
             <div key={file} className="media-item">
               {isVideo ? (
-                <video src={`http://localhost:5000/uploads/about/${file}`} controls width="150" />
+                <video src={`https://blum-backend.onrender.com/uploads/about/${file}`} controls width="150" />
               ) : (
-                <img src={`http://localhost:5000/uploads/about/${file}`} alt="" width="150" />
+                <img src={`https://blum-backend.onrender.com/uploads/about/${file}`} alt="" width="150" />
               )}
               <button onClick={() => handleDeleteMedia(file)} className="delete-button">
                 Delete
