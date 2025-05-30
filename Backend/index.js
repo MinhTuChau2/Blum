@@ -1,8 +1,10 @@
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
-const path = require('path');
+const { v2: cloudinary } = require('cloudinary');
+const streamifier = require('streamifier'); // for streaming buffer to Cloudinary
 require('dotenv').config();
 
 const Product = require('./models/Product');
@@ -13,18 +15,19 @@ const About = require('./models/About');
 const Order = require('./models/Order');
 const app = express();
 
+// Cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('uploads')); // Serve images from "uploads" folder
-
-// Multer setup for image upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) =>
-    cb(null, Date.now() + path.extname(file.originalname)),
-});
-const upload = multer({ storage });
+// Multer setup for memory storage (to get file buffer directly)
+const upload = multer({ storage: multer.memoryStorage() });
 
 // --- MongoDB Connection ---
 mongoose.connect(process.env.MONGO_URI, {
@@ -34,11 +37,25 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => console.log('✅ MongoDB connected'))
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// --- Image Upload Route ---
+// --- Image Upload Route (Cloudinary) ---
 app.post('/upload', upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-  res.json({ imageUrl });
+
+  let cld_upload_stream = cloudinary.uploader.upload_stream(
+    { folder: 'your_folder_name' },
+    (error, result) => {
+      if (error) {
+        console.error('Cloudinary upload error:', error);
+        return res.status(500).json({ error: 'Cloudinary upload failed' });
+      }
+
+      console.log('Cloudinary upload result:', result); // <--- log this
+
+      res.json({ imageUrl: result.secure_url });
+    }
+  );
+
+  streamifier.createReadStream(req.file.buffer).pipe(cld_upload_stream);
 });
 
 // --- Article Routes ---
