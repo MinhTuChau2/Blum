@@ -156,7 +156,10 @@ const AddArticle = () => {
               }}
             />
           )}
-          <p>{article.content}</p>
+          {article.content.split('\n\n').map((paragraph, idx) => (
+  <p key={idx}>{paragraph}</p>
+))}
+
           <button
             onClick={() => handleDelete(article._id)}
             style={styles.deleteButton}

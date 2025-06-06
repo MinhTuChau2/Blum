@@ -78,9 +78,16 @@ const ArticlesList = () => {
                 />
               )}
 
-              <p style={styles.content}>
-                {isExpanded ? article.content : previewContent}
-              </p>
+              <div style={styles.content}>
+  {(isExpanded ? article.content : previewContent)
+    .split('\n')
+    .map((para, index) => (
+      <p key={index} style={{ marginBottom: '1em' }}>
+        {para}
+      </p>
+    ))}
+</div>
+
               {article.content.length > 200 && (
                 <button onClick={() => toggleExpand(article._id)} style={styles.readMoreBtn}>
                   {isExpanded ? 'Show Less' : 'Read More'}

@@ -56,11 +56,16 @@
 .embed-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+  gap: 2.5rem;
+  margin-top: 1rem;
 }
 
 .embed-grid li {
   margin: 0;
+  padding: 1rem;
+  background: white;
+  border-radius: 10px;
+  
 }
 
 /* TikTok */
@@ -68,6 +73,7 @@
   width: 100% !important;
   max-width: 325px;
   margin: 0 auto !important;
+  margin-bottom: 1.5rem !important;
 }
 
 /* Instagram */
@@ -75,10 +81,9 @@
   max-width: 300px !important;
   width: 100% !important;
   margin: 0 auto !important;
-
-  /* Add this to increase vertical space */
-  min-height: 550px !important; /* adjust to preferred height */
-  padding-bottom: 1rem; /* space below */
+  min-height: 550px !important;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem !important;
 }
 
 /* YouTube */
@@ -89,9 +94,23 @@
   aspect-ratio: 16 / 9;
   border: none;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+ 
   display: block;
   margin: 0 auto;
+  margin-bottom: 1.5rem !important;
+}
+
+/* Spotify */
+.spotify-embed {
+  width: 100% !important;
+  max-width: 360px;
+  height: 152px;
+  border: none;
+  border-radius: 8px;
+
+  display: block;
+  margin: 0 auto;
+  margin-bottom: 1.5rem !important;
 }
 
 /* Responsive layout */
