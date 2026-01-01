@@ -59,7 +59,7 @@ const ArticlesList = () => {
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       {filteredArticles.length === 0 ? (
-        <p>No articles found.</p>
+        <p>Wait 1 minute for Render to load the content...</p>
       ) : (
         filteredArticles.map(article => {
           const isExpanded = expandedArticleId === article._id;
