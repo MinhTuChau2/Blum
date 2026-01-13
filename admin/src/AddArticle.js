@@ -17,7 +17,7 @@ const AddArticle = () => {
 
   const fetchArticles = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/articles');
+      const res = await axios.get('https://blum-backend.onrender.com/articles');
       setArticles(res.data);
     } catch (err) {
       console.error('Error fetching articles:', err);
@@ -31,7 +31,7 @@ const AddArticle = () => {
 
     setIsUploading(true);
     try {
-      const res = await axios.post('http://localhost:5000/upload', formData, {
+      const res = await axios.post('https://blum-backend.onrender.com/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setImage(res.data.imageUrl); // assuming the backend returns { imageUrl: '...' }
@@ -61,7 +61,7 @@ const AddArticle = () => {
     };
 
     try {
-      await axios.post('http://localhost:5000/articles', newArticle);
+      await axios.post('https://blum-backend.onrender.com/articles', newArticle);
       setMessage('✅ Article added!');
       setTitle('');
       setContent('');
@@ -78,7 +78,7 @@ const AddArticle = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/articles/${id}`);
+      await axios.delete(`https://blum-backend.onrender.com/articles/${id}`);
       setMessage('🗑️ Article deleted');
       fetchArticles();
     } catch (err) {

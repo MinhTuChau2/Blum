@@ -141,3 +141,31 @@
   cursor: pointer;
   margin-left: 1rem;
 }
+
+
+
+.product-image:hover {
+  transform: scale(1.05);
+}
+
+/* Modal background */
+.image-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Zoomed image */
+.zoomed-image {
+  max-width: 90%;
+  max-height: 90%;
+  border-radius: 8px;
+  cursor: zoom-out;
+}
