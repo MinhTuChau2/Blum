@@ -106,7 +106,7 @@ function AppWrapper() {
   </div>
   <footer className="footer">
   <a
-    href="https://www.instagram.com/your_instagram_username"
+    href="https://www.instagram.com/blum.mtl/"
     target="_blank"
     rel="noopener noreferrer"
     className="instagram-link"

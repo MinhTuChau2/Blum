@@ -59,7 +59,7 @@ const ArticlesList = () => {
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       {filteredArticles.length === 0 ? (
-        <p>No articles found.</p>
+        <p>Wait 1 minute for Render to load the content...</p>
       ) : (
         filteredArticles.map(article => {
           const isExpanded = expandedArticleId === article._id;
@@ -78,9 +78,16 @@ const ArticlesList = () => {
                 />
               )}
 
-              <p style={styles.content}>
-                {isExpanded ? article.content : previewContent}
-              </p>
+              <div style={styles.content}>
+  {(isExpanded ? article.content : previewContent)
+    .split('\n')
+    .map((para, index) => (
+      <p key={index} style={{ marginBottom: '1em' }}>
+        {para}
+      </p>
+    ))}
+</div>
+
               {article.content.length > 200 && (
                 <button onClick={() => toggleExpand(article._id)} style={styles.readMoreBtn}>
                   {isExpanded ? 'Show Less' : 'Read More'}

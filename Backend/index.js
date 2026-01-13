@@ -2,8 +2,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
-const path = require('path');
+const { v2: cloudinary } = require('cloudinary');
+const streamifier = require('streamifier'); // for streaming buffer to Cloudinary
 require('dotenv').config();
+const path = require('path');
 
 const Product = require('./models/Product');
 const Article = require('./models/Article');
@@ -13,18 +15,19 @@ const About = require('./models/About');
 const Order = require('./models/Order');
 const app = express();
 
+// Cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('uploads')); // Serve images from "uploads" folder
-
-// Multer setup for image upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) =>
-    cb(null, Date.now() + path.extname(file.originalname)),
-});
-const upload = multer({ storage });
+// Multer setup for memory storage (to get file buffer directly)
+const upload = multer({ storage: multer.memoryStorage() });
 
 // --- MongoDB Connection ---
 mongoose.connect(process.env.MONGO_URI, {
@@ -34,12 +37,28 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => console.log('✅ MongoDB connected'))
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// --- Image Upload Route ---
+// --- Image Upload Route (Cloudinary) ---
 app.post('/upload', upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-  res.json({ imageUrl });
+
+  const cld_upload_stream = cloudinary.uploader.upload_stream(
+    { folder: 'your_folder_name' },
+    (error, result) => {
+      if (error) {
+        console.error('Cloudinary upload error:', error);
+        return res.status(500).json({ error: 'Cloudinary upload failed' });
+      }
+
+      // Save the Cloudinary URL to your database here
+      // e.g. YourModel.create({ imageUrl: result.secure_url }) or update existing
+
+      res.json({ imageUrl: result.secure_url });  // <-- This is the Cloudinary URL
+    }
+  );
+
+  streamifier.createReadStream(req.file.buffer).pipe(cld_upload_stream);
 });
+
 
 // --- Article Routes ---
 
@@ -190,17 +209,17 @@ app.post('/login', async (req, res) => {
   }
 });
 
-const aboutUpload = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/about/'),
-  filename: (req, file, cb) =>
-    cb(null, Date.now() + path.extname(file.originalname)),
-});
-const aboutUploader = multer({ storage: aboutUpload });
+//const aboutUpload = multer.diskStorage({
+  //destination: (req, file, cb) => cb(null, 'uploads/about/'),
+ // filename: (req, file, cb) =>
+   // cb(null, Date.now() + path.extname(file.originalname)),
+//});
+//const aboutUploader = multer({ storage: aboutUpload });
 
 // Ensure uploads/about directory exists
-if (!fs.existsSync('uploads/about')) {
-  fs.mkdirSync('uploads/about', { recursive: true });
-}
+//if (!fs.existsSync('uploads/about')) {
+ // fs.mkdirSync('uploads/about', { recursive: true });
+//}
 
 // GET current about content
 app.get('/about', async (req, res) => {
@@ -216,8 +235,9 @@ app.get('/about', async (req, res) => {
   }
 });
 
-// PUT update about content
-app.put('/about', aboutUploader.array('media'), async (req, res) => {
+
+// PUT update about content with Cloudinary upload
+app.put('/about', upload.array('media'), async (req, res) => {
   try {
     let about = await About.findOne();
     if (!about) {
@@ -226,10 +246,26 @@ app.put('/about', aboutUploader.array('media'), async (req, res) => {
 
     about.text = req.body.text || '';
 
-    // Handle media uploads
+    // Upload media files to Cloudinary if any
     if (req.files && req.files.length > 0) {
-      const filenames = req.files.map((file) => file.filename);
-      about.media.push(...filenames);
+      const uploadPromises = req.files.map(file => {
+        return new Promise((resolve, reject) => {
+          const cld_upload_stream = cloudinary.uploader.upload_stream(
+            { folder: 'about_media' },
+            (error, result) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve(result.secure_url);
+              }
+            }
+          );
+          streamifier.createReadStream(file.buffer).pipe(cld_upload_stream);
+        });
+      });
+
+      const uploadedUrls = await Promise.all(uploadPromises);
+      about.media.push(...uploadedUrls);
     }
 
     // Handle external links (support both array and single string)
@@ -249,28 +285,32 @@ app.put('/about', aboutUploader.array('media'), async (req, res) => {
   }
 });
 
-// DELETE media file
-app.delete('/about/media/:filename', async (req, res) => {
+// DELETE media URL from about.media
+app.delete('/about/media', async (req, res) => {
   try {
-    const { filename } = req.params;
+    const { url } = req.body; // URL to delete from media array
+
+    if (!url) return res.status(400).json({ error: 'Media URL required' });
 
     const about = await About.findOne();
     if (!about) return res.status(404).json({ error: 'About not found' });
 
-    about.media = about.media.filter((f) => f !== filename);
+    about.media = about.media.filter(mediaUrl => mediaUrl !== url);
     await about.save();
 
-    const filepath = path.join(__dirname, 'uploads/about/', filename);
-    fs.unlink(filepath, (err) => {
-      if (err) console.warn('File deletion failed:', err);
-    });
+    // Optionally, delete the image from Cloudinary by public_id if you want.
+    // This requires extracting public_id from the URL.
+    // Example: https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg
+    // public_id = sample (without extension)
+    // You can implement this if needed.
 
-    res.status(200).json({ message: 'Media deleted' });
+    res.status(200).json({ message: 'Media URL removed' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to delete media' });
   }
 });
+
 
 // Orders
 

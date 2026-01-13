@@ -86,6 +86,32 @@ const About = () => {
   );
 };
 
+const renderSpotifyEmbed = (url) => {
+  let embedUrl = '';
+
+  if (url.includes('open.spotify.com/')) {
+    embedUrl = url.replace('open.spotify.com/', 'open.spotify.com/embed/');
+  } else {
+    return null;
+  }
+
+  return (
+    <div style={{ marginTop: '1rem' }}>
+      <iframe
+        src={embedUrl}
+        width="300"
+        height="80"
+        frameBorder="0"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        allowFullScreen
+        loading="lazy"
+        title="Spotify Embed"
+      ></iframe>
+    </div>
+  );
+};
+
+
 
   const renderInstagramEmbed = (url) => {
     return (
@@ -143,20 +169,21 @@ const About = () => {
         <>
           <h3 style={{ marginTop: '2rem' }}>Digital Footprints</h3>
           <ul style={{ listStyle: 'none', padding: 0 }}>
-            <ul className="embed-grid">
-            {externalLinks.map((link, index) => {
-              const cleanLink = link.replace(/^"+|"+$/g, '');
-              return (
-                <li key={index} style={{ marginBottom: '2rem' }}>
-                  
-                  {cleanLink.includes('tiktok.com') && renderTikTokEmbed(cleanLink)}
-                  {cleanLink.includes('instagram.com') && renderInstagramEmbed(cleanLink)}
-                {(cleanLink.includes('youtube.com') || cleanLink.includes('youtu.be')) &&
-              renderYouTubeEmbed(cleanLink)}
-                </li>
-              );
-            })}
-            </ul>
+          <ul className="embed-grid">
+  {externalLinks.map((link, index) => {
+    const cleanLink = link.replace(/^"+|"+$/g, '');
+    return (
+      <li key={index} style={{ marginBottom: '2rem' }}>
+        {cleanLink.includes('tiktok.com') && renderTikTokEmbed(cleanLink)}
+        {cleanLink.includes('instagram.com') && renderInstagramEmbed(cleanLink)}
+        {(cleanLink.includes('youtube.com') || cleanLink.includes('youtu.be')) &&
+          renderYouTubeEmbed(cleanLink)}
+        {cleanLink.includes('open.spotify.com') && renderSpotifyEmbed(cleanLink)}
+      </li>
+    );
+  })}
+</ul>
+
             </ul>
         </>
       )}
