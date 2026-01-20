@@ -53,19 +53,26 @@ function AddAbout() {
 };
 
 
-  const handleDeleteMedia = async (filename) => {
-    try {
-      await axios.delete(`https://blum-backend.onrender.com/about/media/${filename}`, {
+const handleDeleteMedia = async (url) => {
+  try {
+    await axios.delete(
+      'https://blum-backend.onrender.com/about/media',
+      {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
-      });
-      setMedia(media.filter((item) => item !== filename));
-    } catch (error) {
-      console.error('Error deleting media:', error);
-      alert('Failed to delete file');
-    }
-  };
+        data: { url }, // <-- IMPORTANT: axios.delete needs data here
+      }
+    );
+
+    setMedia((prev) => prev.filter((item) => item !== url));
+  } catch (error) {
+    console.error('Delete error:', error.response?.data || error);
+    alert('Failed to delete file');
+  }
+};
+ 
+
 
   return (
     <div className="add-about-container">
@@ -160,25 +167,42 @@ function AddAbout() {
   ))}
 </ul>
 
-      <h4 className="section-subtitle">Current Media:</h4>
-      
-      <div className="media-grid">
-        {media.map((file) => {
-          const isVideo = file.match(/\.(mp4|webm|ogg)$/i);
-          return (
-            <div key={file} className="media-item">
-              {isVideo ? (
-                <video src={`https://blum-backend.onrender.com/uploads/about/${file}`} controls width="150" />
-              ) : (
-                <img src={`https://blum-backend.onrender.com/uploads/about/${file}`} alt="" width="150" />
-              )}
-              <button onClick={() => handleDeleteMedia(file)} className="delete-button">
-                Delete
-              </button>
-            </div>
-          );
-        })}
+    <h4 className="section-subtitle">Current Media:</h4>
+
+<div className="media-grid">
+  {media.map((url) => {
+    const isVideo = url.match(/\.(mp4|webm|ogg)(\?|$)/i);
+
+    return (
+      <div key={url} className="media-item">
+        {isVideo ? (
+          <video
+            src={url}
+            controls
+            width="150"
+            style={{ borderRadius: '6px' }}
+          />
+        ) : (
+          <img
+            src={url}
+            alt="About media"
+            width="150"
+            style={{ borderRadius: '6px', objectFit: 'cover' }}
+          />
+        )}
+
+        <button
+          onClick={() => handleDeleteMedia(url)}
+          className="delete-button"
+          style={{ marginTop: '0.5rem' }}
+        >
+          Delete
+        </button>
       </div>
+    );
+  })}
+</div>
+
     </div>
   );
 }

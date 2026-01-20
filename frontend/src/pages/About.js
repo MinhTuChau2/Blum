@@ -6,6 +6,9 @@ const About = () => {
   const [text, setText] = useState('');
   const [media, setMedia] = useState([]);
   const [externalLinks, setExternalLinks] = useState([]);
+  const [showAllMedia, setShowAllMedia] = useState(false);
+  const [zoomedMedia, setZoomedMedia] = useState(null);
+  const MAX_VISIBLE_MEDIA = 4;
 
   useEffect(() => {
     const fetchAbout = async () => {
@@ -140,29 +143,73 @@ const renderSpotifyEmbed = (url) => {
       <h2>About Blum</h2>
       <p style={{ whiteSpace: 'pre-line' }}>{text}</p>
 
-      {/* Gallery Section */}
-      {media.length > 0 && (
-        <>
-          <h3 style={{ marginTop: '2rem' }}>Gallery</h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-            {media.map((item, index) => {
-              const fileUrl = item.startsWith('http')
-                ? item
-                : `https://blum-backend.onrender.com/uploads/about/${item}`;
+{/* Gallery Section */}
+{media.length > 0 && (
+  <>
+    <h3 style={{ marginTop: '2rem' }}>Gallery</h3>
 
-              return (
-                <div key={index}>
-                  {isVideo(item) ? (
-                    <video src={fileUrl} controls width="300" />
-                  ) : (
-                    <img src={fileUrl} alt="" width="300" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </>
+    <div className="gallery-grid">
+      {(showAllMedia ? media : media.slice(0, MAX_VISIBLE_MEDIA)).map(
+        (item, index) => {
+          const fileUrl = item.startsWith('http')
+            ? item
+            : `https://blum-backend.onrender.com/uploads/about/${item}`;
+
+          return (
+            <div key={index} className="gallery-item">
+              {isVideo(item) ? (
+                <video src={fileUrl} controls />
+              ) : (
+                <img
+                    src={fileUrl}
+                    alt="Gallery item"
+                    style={{ cursor: 'zoom-in' }}
+                    onClick={() => setZoomedMedia(fileUrl)}
+                />
+              )}
+            </div>
+          );
+        }
       )}
+    </div>
+
+    {media.length > MAX_VISIBLE_MEDIA && (
+      <button
+        className="gallery-toggle"
+        onClick={() => setShowAllMedia((prev) => !prev)}
+      >
+        {showAllMedia ? 'Show less' : `Show all (${media.length})`}
+      </button>
+    )}
+  </>
+)}
+
+{zoomedMedia && (
+  <div
+    onClick={() => setZoomedMedia(null)}
+    style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      cursor: 'zoom-out',
+    }}
+  >
+    <img
+      src={zoomedMedia}
+      alt="Zoomed"
+      style={{
+        maxWidth: '90%',
+        maxHeight: '90%',
+        borderRadius: '10px',
+      }}
+      onClick={(e) => e.stopPropagation()}
+    />
+  </div>
+)}
 
       {/* External Links and Embeds */}
       {externalLinks.length > 0 && (

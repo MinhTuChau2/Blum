@@ -59,6 +59,25 @@ app.post('/upload', upload.single('image'), (req, res) => {
   streamifier.createReadStream(req.file.buffer).pipe(cld_upload_stream);
 });
 
+//delete media
+app.delete('/about/media', async (req, res) => {
+  try {
+    const { url } = req.body;
+
+    if (!url) return res.status(400).json({ error: 'Media URL required' });
+
+    const about = await About.findOne();
+    if (!about) return res.status(404).json({ error: 'About not found' });
+
+    about.media = about.media.filter(mediaUrl => mediaUrl !== url);
+    await about.save();
+
+    res.status(200).json({ message: 'Media URL removed' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete media' });
+  }
+});
 
 // --- Article Routes ---
 
