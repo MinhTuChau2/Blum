@@ -8,6 +8,23 @@ function AddAbout() {
   const [newFiles, setNewFiles] = useState([]);
   const [externalLinks, setExternalLinks] = useState(['']);
 
+const moveMediaUp = (index) => {
+  if (index === 0) return;
+  setMedia((prev) => {
+    const updated = [...prev];
+    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+    return updated;
+  });
+};
+
+const moveMediaDown = (index) => {
+  setMedia((prev) => {
+    if (index === prev.length - 1) return prev;
+    const updated = [...prev];
+    [updated[index + 1], updated[index]] = [updated[index], updated[index + 1]];
+    return updated;
+  });
+};
 
   useEffect(() => {
     const fetchAbout = async () => {
@@ -26,24 +43,36 @@ function AddAbout() {
  const handleSubmit = async (e) => {
   e.preventDefault();
   const formData = new FormData();
+
   formData.append('text', text);
-  
+
+  // NEW: send media order
+  media.forEach((url) => {
+    formData.append('mediaOrder', url);
+  });
+
   for (let i = 0; i < newFiles.length; i++) {
     formData.append('media', newFiles[i]);
   }
 
-  // Append externalLinks as multiple entries (not as a JSON string)
-  externalLinks.filter(link => link.trim() !== '').forEach(link => {
-    formData.append('externalLinks', link);
-  });
+  externalLinks
+    .filter(link => link.trim() !== '')
+    .forEach(link => {
+      formData.append('externalLinks', link);
+    });
 
   try {
-    await axios.put('https://blum-backend.onrender.com/about', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-    });
+    await axios.put(
+      'https://blum-backend.onrender.com/about',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      }
+    );
+
     alert('About section updated!');
     window.location.reload();
   } catch (error) {
@@ -51,6 +80,7 @@ function AddAbout() {
     alert('Error updating about section');
   }
 };
+
 
 
 const handleDeleteMedia = async (url) => {
@@ -170,26 +200,34 @@ const handleDeleteMedia = async (url) => {
     <h4 className="section-subtitle">Current Media:</h4>
 
 <div className="media-grid">
-  {media.map((url) => {
+  {media.map((url, index) => {
     const isVideo = url.match(/\.(mp4|webm|ogg)(\?|$)/i);
 
     return (
       <div key={url} className="media-item">
         {isVideo ? (
-          <video
-            src={url}
-            controls
-            width="150"
-            style={{ borderRadius: '6px' }}
-          />
+          <video src={url} controls width="150" />
         ) : (
-          <img
-            src={url}
-            alt="About media"
-            width="150"
-            style={{ borderRadius: '6px', objectFit: 'cover' }}
-          />
+          <img src={url} alt="About media" width="150" />
         )}
+
+        <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }}>
+          <button
+            type="button"
+            disabled={index === 0}
+            onClick={() => moveMediaUp(index)}
+          >
+            ↑
+          </button>
+
+          <button
+            type="button"
+            disabled={index === media.length - 1}
+            onClick={() => moveMediaDown(index)}
+          >
+            ↓
+          </button>
+        </div>
 
         <button
           onClick={() => handleDeleteMedia(url)}
@@ -202,6 +240,7 @@ const handleDeleteMedia = async (url) => {
     );
   })}
 </div>
+
 
     </div>
   );
