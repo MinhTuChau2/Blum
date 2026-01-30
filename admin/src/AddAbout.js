@@ -74,7 +74,9 @@ const moveMediaDown = (index) => {
     );
 
     alert('About section updated!');
-    window.location.reload();
+const res = await axios.get('https://blum-backend.onrender.com/about');
+setMedia(res.data.media || []);
+
   } catch (error) {
     console.error(error);
     alert('Error updating about section');

@@ -61,6 +61,7 @@ app.post('/upload', upload.single('image'), (req, res) => {
 
 //delete media
 app.delete('/about/media', async (req, res) => {
+  
   try {
     const { url } = req.body;
 
@@ -77,6 +78,7 @@ app.delete('/about/media', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'Failed to delete media' });
   }
+
 });
 
 // --- Article Routes ---
@@ -286,6 +288,13 @@ app.put('/about', upload.array('media'), async (req, res) => {
       const uploadedUrls = await Promise.all(uploadPromises);
       about.media.push(...uploadedUrls);
     }
+
+    // Handle media order update
+if (req.body.mediaOrder) {
+  about.media = Array.isArray(req.body.mediaOrder)
+    ? req.body.mediaOrder
+    : [req.body.mediaOrder];
+}
 
     // Handle external links (support both array and single string)
     if (req.body.externalLinks) {
