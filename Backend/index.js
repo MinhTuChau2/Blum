@@ -261,57 +261,55 @@ app.get('/about', async (req, res) => {
 app.put('/about', upload.array('media'), async (req, res) => {
   try {
     let about = await About.findOne();
-    if (!about) {
-      about = new About();
-    }
+    if (!about) about = new About();
 
     about.text = req.body.text || '';
 
-    // Upload media files to Cloudinary if any
+    // Upload new files to Cloudinary
+    let uploadedUrls = [];
     if (req.files && req.files.length > 0) {
       const uploadPromises = req.files.map(file => {
         return new Promise((resolve, reject) => {
           const cld_upload_stream = cloudinary.uploader.upload_stream(
             { folder: 'about_media' },
             (error, result) => {
-              if (error) {
-                reject(error);
-              } else {
-                resolve(result.secure_url);
-              }
+              if (error) reject(error);
+              else resolve(result.secure_url);
             }
           );
           streamifier.createReadStream(file.buffer).pipe(cld_upload_stream);
         });
       });
-
-      const uploadedUrls = await Promise.all(uploadPromises);
-      about.media.push(...uploadedUrls);
+      uploadedUrls = await Promise.all(uploadPromises);
     }
 
-    // Handle media order update
-if (req.body.mediaOrder) {
-  about.media = Array.isArray(req.body.mediaOrder)
-    ? req.body.mediaOrder
-    : [req.body.mediaOrder];
-}
+    // Merge uploaded files with existing media
+    about.media.push(...uploadedUrls);
 
-    // Handle external links (support both array and single string)
+    // Handle media order only if mediaOrder exists
+    if (req.body.mediaOrder) {
+      const order = Array.isArray(req.body.mediaOrder)
+        ? req.body.mediaOrder
+        : [req.body.mediaOrder];
+      // Make sure we include all uploaded files
+      about.media = [...order, ...uploadedUrls.filter(url => !order.includes(url))];
+    }
+
+    // External links
     if (req.body.externalLinks) {
-      if (Array.isArray(req.body.externalLinks)) {
-        about.externalLinks = req.body.externalLinks;
-      } else {
-        about.externalLinks = [req.body.externalLinks];
-      }
+      about.externalLinks = Array.isArray(req.body.externalLinks)
+        ? req.body.externalLinks
+        : [req.body.externalLinks];
     }
 
     await about.save();
-    res.json(about);
+    res.json(about); // return the updated About object
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to update about content' });
   }
 });
+
 
 // DELETE media URL from about.media
 app.delete('/about/media', async (req, res) => {
