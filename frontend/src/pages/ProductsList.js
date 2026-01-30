@@ -74,26 +74,36 @@
         <Cart cart={cart} removeFromCart={removeFromCart} />
 
         <div className="main-content">
-          <ul className="products-list">
-            {filteredProducts.map(p => (
-              <li key={p._id}>
-                <h3>{p.name}</h3>
-                <p>${p.price}</p>
-                <p>{p.description}</p>
-                {p.imageUrl && (
-                  <img 
-                  src={p.imageUrl} 
-                  alt={p.name} 
-                  className="product-image" 
-                  onClick={() => setZoomImage(p.imageUrl)}
-                  />
-                  )}
+         <ul className="products-list">
+  {filteredProducts.length === 0 ? (
+    <li className="no-products">
+      Using the free version of OnRender... Sooo... Please wait 1 minute for the components to load{selectedCategory !== 'All' && ` in "${selectedCategory}"`} 🛒
+    </li>
+  ) : (
+    filteredProducts.map(p => (
+      <li key={p._id}>
+        <h3>{p.name}</h3>
+        <p>${p.price}</p>
+        <p>{p.description}</p>
 
-                <p>Category: {p.category}</p>
-                <button className="add-btn" onClick={() => addToCart(p)}>Add to Cart</button>
-              </li>
-            ))}
-          </ul>
+        {p.imageUrl && (
+          <img
+            src={p.imageUrl}
+            alt={p.name}
+            className="product-image"
+            onClick={() => setZoomImage(p.imageUrl)}
+          />
+        )}
+
+        <p>Category: {p.category}</p>
+        <button className="add-btn" onClick={() => addToCart(p)}>
+          Add to Cart
+        </button>
+      </li>
+    ))
+  )}
+</ul>
+
         </div>
         {zoomImage && (
             <div className="image-modal" onClick={() => setZoomImage(null)}>
