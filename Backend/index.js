@@ -265,37 +265,34 @@ app.put('/about', upload.array('media'), async (req, res) => {
 
     about.text = req.body.text || '';
 
-    // Upload new files to Cloudinary
+    // Upload new files
     let uploadedUrls = [];
-    if (req.files && req.files.length > 0) {
-      const uploadPromises = req.files.map(file => {
-        return new Promise((resolve, reject) => {
-          const cld_upload_stream = cloudinary.uploader.upload_stream(
-            { folder: 'about_media' },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result.secure_url);
-            }
-          );
-          streamifier.createReadStream(file.buffer).pipe(cld_upload_stream);
-        });
-      });
-      uploadedUrls = await Promise.all(uploadPromises);
+    if (req.files?.length) {
+      uploadedUrls = await Promise.all(
+        req.files.map(file =>
+          new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+              { folder: 'about_media' },
+              (err, result) => err ? reject(err) : resolve(result.secure_url)
+            ).end(file.buffer);
+          })
+        )
+      );
     }
 
-    // Merge uploaded files with existing media
-    about.media.push(...uploadedUrls);
-
-    // Handle media order only if mediaOrder exists
-    if (req.body.mediaOrder) {
-      const order = Array.isArray(req.body.mediaOrder)
+    // Handle media order
+    const mediaOrder = req.body.mediaOrder
+      ? Array.isArray(req.body.mediaOrder)
         ? req.body.mediaOrder
-        : [req.body.mediaOrder];
-      // Make sure we include all uploaded files
-      about.media = [...order, ...uploadedUrls.filter(url => !order.includes(url))];
-    }
+        : [req.body.mediaOrder]
+      : [];
 
-    // External links
+    about.media = [
+      ...mediaOrder,
+      ...uploadedUrls.filter(url => !mediaOrder.includes(url))
+    ];
+
+    // External links (already ordered)
     if (req.body.externalLinks) {
       about.externalLinks = Array.isArray(req.body.externalLinks)
         ? req.body.externalLinks
@@ -303,7 +300,7 @@ app.put('/about', upload.array('media'), async (req, res) => {
     }
 
     await about.save();
-    res.json(about); // return the updated About object
+    res.json(about);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to update about content' });

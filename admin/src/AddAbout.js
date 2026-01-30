@@ -9,7 +9,7 @@ function AddAbout() {
   const [externalLinks, setExternalLinks] = useState(['']);
   const [loading, setLoading] = useState(false);
 
-  // Move link up
+  // Move link up/down
   const moveLinkUp = (index) => {
     if (index === 0) return;
     setExternalLinks((prev) => {
@@ -19,9 +19,27 @@ function AddAbout() {
     });
   };
 
-  // Move link down
   const moveLinkDown = (index) => {
     setExternalLinks((prev) => {
+      if (index === prev.length - 1) return prev;
+      const updated = [...prev];
+      [updated[index + 1], updated[index]] = [updated[index], updated[index + 1]];
+      return updated;
+    });
+  };
+
+  // Move media up/down
+  const moveMediaUp = (index) => {
+    if (index === 0) return;
+    setMedia((prev) => {
+      const updated = [...prev];
+      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+      return updated;
+    });
+  };
+
+  const moveMediaDown = (index) => {
+    setMedia((prev) => {
       if (index === prev.length - 1) return prev;
       const updated = [...prev];
       [updated[index + 1], updated[index]] = [updated[index], updated[index + 1]];
@@ -50,6 +68,10 @@ function AddAbout() {
     const formData = new FormData();
     formData.append('text', text);
 
+    // Append existing media in current order
+    media.forEach((url) => formData.append('mediaOrder', url));
+
+
     // Append new files
     newFiles.forEach((file) => formData.append('media', file));
 
@@ -71,13 +93,13 @@ function AddAbout() {
         }
       );
 
-      // Update frontend state
       setMedia(res.data.media || []);
       setText(res.data.text || '');
       setExternalLinks(res.data.externalLinks || []);
       setNewFiles([]);
       setLoading(false);
       alert('About section updated!');
+      window.location.reload();
     } catch (err) {
       console.error(err);
       setLoading(false);
@@ -113,6 +135,7 @@ function AddAbout() {
           />
         </div>
 
+        {/* External Links */}
         <div className="form-group">
           <label>Add external media links:</label>
           {externalLinks.map((link, index) => (
@@ -137,6 +160,7 @@ function AddAbout() {
           </button>
         </div>
 
+        {/* Upload New Media */}
         <div className="form-group">
           <label>Upload New Images or Videos:</label>
           <input
@@ -169,7 +193,34 @@ function AddAbout() {
           return (
             <div key={`${url}-${index}`} className="media-item">
               {isVideo ? <video src={url} controls width="150" /> : <img src={url} alt="About media" width="150" />}
-              <button onClick={() => handleDeleteMedia(url)} style={{ marginTop: '0.5rem' }}>Delete</button>
+              
+              <div className="media-controls">
+  <button
+    type="button"
+    className="arrow-btn"
+    disabled={index === 0}
+    onClick={() => moveMediaUp(index)}
+  >
+    ↑
+  </button>
+  <button
+    type="button"
+    className="arrow-btn"
+    disabled={index === media.length - 1}
+    onClick={() => moveMediaDown(index)}
+  >
+    ↓
+  </button>
+</div>
+
+
+            <button
+  className="delete-btn"
+  onClick={() => handleDeleteMedia(url)}
+>
+  Delete
+</button>
+
             </div>
           );
         })}
