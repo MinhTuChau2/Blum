@@ -177,6 +177,21 @@ app.delete('/products/:id', async (req, res) => {
   }
 });
 
+app.put('/products/:id', async (req, res) => {
+  try {
+    const updated = await Product.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update product' });
+  }
+});
+
+
+
 // --- User Routes ---
 
 app.post('/users', async (req, res) => {

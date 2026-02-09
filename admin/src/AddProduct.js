@@ -12,6 +12,18 @@ const AddProduct = () => {
   });
 
   const [products, setProducts] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+
+  const handleEdit = (product) => {
+  setProduct({
+    name: product.name,
+    price: product.price,
+    description: product.description,
+    imageUrl: product.imageUrl,
+    category: product.category
+  });
+  setEditingId(product._id);
+};
 
   // Fetch products from backend
   const fetchProducts = async () => {
@@ -49,18 +61,46 @@ const AddProduct = () => {
     }
   };
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    try {
-      await axios.post('https://blum-backend.onrender.com/products', product);
-      alert('✅ Product added successfully!');
-      setProduct({ name: '', price: '', description: '', imageUrl: '', category: '' });
-      fetchProducts(); // refresh list
-    } catch (error) {
-      alert('❌ Failed to add product');
-      console.error(error);
+const handleSubmit = async e => {
+  e.preventDefault();
+
+  try {
+    const productToSend = { 
+      ...product, 
+      price: product.price ? Number(product.price) : 0,
+      imageUrl: product.imageUrl || ''
+    };
+
+    if (editingId) {
+      await axios.put(
+        `https://blum-backend.onrender.com/products/${editingId}`,
+        productToSend
+      );
+      alert('✏️ Product updated!');
+    } else {
+      await axios.post(
+        'https://blum-backend.onrender.com/products',
+        productToSend
+      );
+      alert('✅ Product added!');
     }
-  };
+
+    setProduct({
+      name: '',
+      price: '',
+      description: '',
+      imageUrl: '',
+      category: ''
+    });
+    setEditingId(null);
+    fetchProducts();
+  } catch (error) {
+    console.error('Save product error:', error.response?.data || error.message);
+    alert('❌ Failed to save product: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+
 
   const handleDelete = async id => {
     if (window.confirm('Are you sure you want to delete this product?')) {
@@ -79,8 +119,8 @@ const AddProduct = () => {
     <div className="container">
       <main className="main-content">
         <aside className="sidebar" id="add-product">
-          <h2>Add Product</h2>
-          <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit}>
+            <h2>{editingId ? 'Edit Product' : 'Add Product'}</h2>
             <input
               name="name"
               value={product.name}
@@ -112,7 +152,27 @@ const AddProduct = () => {
               onChange={handleChange}
               placeholder="Category"
             />
-            <button type="submit">Add Product</button>
+            <button type="submit">
+              {editingId ? 'Update Product' : 'Add Product'}
+            </button>
+             {/* Cancel Edit button */}
+            {editingId && (
+              <button
+                type="button"
+                onClick={() => {
+                setEditingId(null);
+                setProduct({
+                name: '',
+                price: '',
+                description: '',
+                imageUrl: '',
+                category: ''
+          });
+        }}
+      >
+        Cancel Edit
+      </button>
+    )}
           </form>
         </aside>
 
@@ -133,6 +193,7 @@ const AddProduct = () => {
                     </div>
                     <small>{p.description}</small>
                   </div>
+                  <button onClick={() => handleEdit(p)}>Edit</button>
                   <button onClick={() => handleDelete(p._id)}>Delete</button>
                 </li>
               ))}
