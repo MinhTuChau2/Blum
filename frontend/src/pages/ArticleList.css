@@ -1,0 +1,16 @@
+.flower-spinner {
+  width: 120px;
+  height: 70px;
+  margin-bottom: 15px;
+  position: relative;
+  animation: pingPong 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes pingPong {
+  from {
+    transform: translateX(-80px) rotate(0deg);
+  }
+  to {
+    transform: translateX(80px) rotate(360deg);
+  }
+}

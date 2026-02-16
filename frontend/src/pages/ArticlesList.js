@@ -1,33 +1,43 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import './ArticleList.css';
+import Orange from "../assets/ORNGE.png";
 
 const ArticlesList = () => {
   const [articles, setArticles] = useState([]);
   const [expandedArticleId, setExpandedArticleId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchArticles = async () => {
-      try {
-        const res = await axios.get('https://blum-backend.onrender.com/articles');
-        const processedArticles = res.data
-          .map(article => ({
-            ...article,
-            image: article.image && !article.image.startsWith('http')
-              ? `https://blum-backend.onrender.com/${article.image}`
-              : article.image
-          }))
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // ✅ Sort by newest
-        setArticles(processedArticles);
-      } catch (err) {
-        console.error(err);
-        setError('Failed to load articles');
-      }
-    };
+ useEffect(() => {
+  const fetchArticles = async () => {
+    try {
+      setLoading(true);
 
-    fetchArticles();
-  }, []);
+      const res = await axios.get('https://blum-backend.onrender.com/articles');
+
+      const processedArticles = res.data
+        .map(article => ({
+          ...article,
+          image: article.image && !article.image.startsWith('http')
+            ? `https://blum-backend.onrender.com/${article.image}`
+            : article.image
+        }))
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      setArticles(processedArticles);
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load articles');
+      setLoading(false);
+    }
+  };
+
+  fetchArticles();
+}, []);
+
 
   const toggleExpand = (id) => {
     setExpandedArticleId(prevId => (prevId === id ? null : id));
@@ -58,9 +68,21 @@ const ArticlesList = () => {
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      {filteredArticles.length === 0 ? (
-        <p>Wait 1 minute for Render to load the content...</p>
-      ) : (
+      {loading ? (
+  <div style={{ textAlign: 'center', padding: '2rem' }}>
+    <img
+      src={Orange}
+      alt="Loading..."
+      className="flower-spinner"
+    />
+    <p>Waking up Render server... please wait 🌼</p>
+  </div>
+) : error ? (
+  <p style={{ color: 'red' }}>{error}</p>
+) : filteredArticles.length === 0 ? (
+  <p>No articles found.</p>
+) : (
+
         filteredArticles.map(article => {
           const isExpanded = expandedArticleId === article._id;
           const previewContent = article.content.slice(0, 200) + (article.content.length > 200 ? '...' : '');

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './About.css';
+import Orange from "../assets/ORNGE.png";
 
 const About = () => {
   const [text, setText] = useState('');
@@ -8,21 +9,33 @@ const About = () => {
   const [externalLinks, setExternalLinks] = useState([]);
   const [showAllMedia, setShowAllMedia] = useState(false);
   const [zoomedMedia, setZoomedMedia] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
   const MAX_VISIBLE_MEDIA = 4;
 
-  useEffect(() => {
-    const fetchAbout = async () => {
-      try {
-        const res = await axios.get('https://blum-backend.onrender.com/about');
-        setText(res.data.text || '');
-        setMedia(res.data.media || []);
-        setExternalLinks(res.data.externalLinks || []);
-      } catch (err) {
-        console.error('Error loading about content:', err);
-      }
-    };
-    fetchAbout();
-  }, []);
+ useEffect(() => {
+  const fetchAbout = async () => {
+    try {
+      setLoading(true);
+
+      const res = await axios.get('https://blum-backend.onrender.com/about');
+
+      setText(res.data.text || '');
+      setMedia(res.data.media || []);
+      setExternalLinks(res.data.externalLinks || []);
+
+      setLoading(false);
+    } catch (err) {
+      console.error('Error loading about content:', err);
+      setError('Failed to load content.');
+      setLoading(false);
+    }
+  };
+
+  fetchAbout();
+}, []);
+
 
   // Re-load embed scripts whenever links are updated
   useEffect(() => {
@@ -141,8 +154,22 @@ const renderSpotifyEmbed = (url) => {
   return (
     <div className="about-container">
       <h2>About Blum</h2>
-      <p style={{ whiteSpace: 'pre-line' }}>{text}</p>
+      {loading ? (
+  <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+    <img
+      src={Orange}
+      alt="Loading..."
+      className="flower-spinner"
+    />
+    <p>Waking up Render server... please wait 🌼</p>
+  </div>
+) : error ? (
+  <p style={{ color: 'red' }}>{error}</p>
+) : (
+  <>
 
+      <p style={{ whiteSpace: 'pre-line' }}>{text}</p>
+      
 {/* Gallery Section */}
 {media.length > 0 && (
   <>
@@ -234,6 +261,9 @@ const renderSpotifyEmbed = (url) => {
             </ul>
         </>
       )}
+        </>
+)}
+
     </div>
   );
 };

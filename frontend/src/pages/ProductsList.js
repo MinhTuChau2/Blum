@@ -2,19 +2,29 @@
   import axios from 'axios';
   import Cart from './Cart'; // Make sure this component exists
   import './ProductList.css';
-
+  import Orange from "../assets/ORNGE.png";
+ 
   const ProductsList = () => {
     const [products, setProducts] = useState([]);
     const [cart, setCart] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [zoomImage, setZoomImage] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     // Load products
-    useEffect(() => {
-      axios.get('https://blum-backend.onrender.com/products')
-        .then(res => setProducts(res.data))
-        .catch(err => console.error(err));
-    }, []);
+   useEffect(() => {
+  setLoading(true);
+
+  axios.get('https://blum-backend.onrender.com/products')
+    .then(res => {
+      setProducts(res.data);
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
+}, []);
 
     // Load cart from localStorage on mount
     useEffect(() => {
@@ -73,38 +83,50 @@
         {/* Cart Component */}
         <Cart cart={cart} removeFromCart={removeFromCart} />
 
-        <div className="main-content">
-         <ul className="products-list">
-  {filteredProducts.length === 0 ? (
-    <li className="no-products">
-      Using the free version of OnRender... Sooo... Please wait 1 minute for the components to load{selectedCategory !== 'All' && ` in "${selectedCategory}"`} 🛒
-    </li>
+      <div className="main-content">
+  {loading ? (
+    <div className="loading-container">
+      <img
+        src={Orange}
+        alt="Loading..."
+        className="flower-spinner"
+      />
+      <p>
+        Using Free version of OnRender... Waking up the Render server... please wait...
+      </p>
+    </div>
+  ) : filteredProducts.length === 0 ? (
+    <div className="no-products">
+      No products found
+      {selectedCategory !== 'All' && ` in "${selectedCategory}"`} 🛒
+    </div>
   ) : (
-    filteredProducts.map(p => (
-      <li key={p._id}>
-        <h3>{p.name}</h3>
-        <p>${p.price}</p>
-        <p>{p.description}</p>
+    <ul className="products-list">
+      {filteredProducts.map(p => (
+        <li key={p._id}>
+          <h3>{p.name}</h3>
+          <p>${p.price}</p>
+          <p>{p.description}</p>
 
-        {p.imageUrl && (
-          <img
-            src={p.imageUrl}
-            alt={p.name}
-            className="product-image"
-            onClick={() => setZoomImage(p.imageUrl)}
-          />
-        )}
+          {p.imageUrl && (
+            <img
+              src={p.imageUrl}
+              alt={p.name}
+              className="product-image"
+              onClick={() => setZoomImage(p.imageUrl)}
+            />
+          )}
 
-        <p>Category: {p.category}</p>
-        <button className="add-btn" onClick={() => addToCart(p)}>
-          Add to Cart
-        </button>
-      </li>
-    ))
+          <p>Category: {p.category}</p>
+          <button className="add-btn" onClick={() => addToCart(p)}>
+            Add to Cart
+          </button>
+        </li>
+      ))}
+    </ul>
   )}
-</ul>
+</div>
 
-        </div>
         {zoomImage && (
             <div className="image-modal" onClick={() => setZoomImage(null)}>
             <img
