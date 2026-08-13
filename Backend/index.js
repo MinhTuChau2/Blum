@@ -3,35 +3,46 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
-const streamifier = require('streamifier'); // for streaming buffer to Cloudinary
+const streamifier = require('streamifier');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
-const path = require('path');
 
 const Product = require('./models/Product');
 const Article = require('./models/Article');
 const User = require('./models/User');
-const fs = require('fs');
 const About = require('./models/About');
 const Order = require('./models/Order');
+const auth = require('./middleware/auth');
+
 const app = express();
 
-// Cloudinary configuration
+// --- Cloudinary Configuration ---
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// --- CORS & Middleware ---
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:3000', 'http://localhost:3001', 'https://blum-frontend.onrender.com'];
 
-// Middleware
-app.use(cors());
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
+  credentials: true,
+}));
+
 app.use(express.json());
 
-// Root / Health check route
-app.get('/', (req, res) => {
-  res.status(200).send('Blum Backend is running!');
-});
-// Multer setup for memory storage (to get file buffer directly)
+// Multer setup for memory storage
 const upload = multer({ storage: multer.memoryStorage() });
 
 // --- MongoDB Connection ---
@@ -42,69 +53,77 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => console.log('✅ MongoDB connected'))
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// --- Image Upload Route (Cloudinary) ---
-app.post('/upload', upload.single('image'), (req, res) => {
+// --- Helper: Extract Cloudinary Public ID ---
+const extractPublicIdFromUrl = (url) => {
+  try {
+    const parts = url.split('/upload/');
+    if (parts.length < 2) return null;
+    const pathAndExt = parts[1].replace(/^v\d+\//, ''); // Strip version tag v12345/
+    const publicId = pathAndExt.substring(0, pathAndExt.lastIndexOf('.'));
+    return publicId;
+  } catch (e) {
+    return null;
+  }
+};
+
+// --- Health Check Route ---
+app.get('/', (req, res) => {
+  res.status(200).send('Blum Backend is running!');
+});
+
+// --- Login Route (JWT & bcrypt) ---
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password required' });
+    }
+
+    const user = await User.findOne({ username: username.trim() });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    const isMatch = await user.comparePassword(password.trim());
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    const token = jwt.sign(
+      { userId: user._id, username: user.username },
+      process.env.JWT_SECRET || 'blum_fallback_secret_key_2026',
+      { expiresIn: '24h' }
+    );
+
+    res.json({ token, user: { id: user._id, username: user.username } });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Server error during login' });
+  }
+});
+
+// --- Image Upload Route (Protected) ---
+app.post('/upload', auth, upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   const cld_upload_stream = cloudinary.uploader.upload_stream(
-    { folder: 'your_folder_name' },
+    { folder: 'blum_uploads' },
     (error, result) => {
       if (error) {
         console.error('Cloudinary upload error:', error);
         return res.status(500).json({ error: 'Cloudinary upload failed' });
       }
-
-      // Save the Cloudinary URL to your database here
-      // e.g. YourModel.create({ imageUrl: result.secure_url }) or update existing
-
-      res.json({ imageUrl: result.secure_url });  // <-- This is the Cloudinary URL
+      res.json({ imageUrl: result.secure_url });
     }
   );
 
   streamifier.createReadStream(req.file.buffer).pipe(cld_upload_stream);
 });
 
-//delete media
-app.delete('/about/media', async (req, res) => {
-  
-  try {
-    const { url } = req.body;
-
-    if (!url) return res.status(400).json({ error: 'Media URL required' });
-
-    const about = await About.findOne();
-    if (!about) return res.status(404).json({ error: 'About not found' });
-
-    about.media = about.media.filter(mediaUrl => mediaUrl !== url);
-    await about.save();
-
-    res.status(200).json({ message: 'Media URL removed' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to delete media' });
-  }
-
-});
-
 // --- Article Routes ---
 
-// POST: Create new article (with image URL)
-app.post('/articles', async (req, res) => {
-  console.log('Article creation data:', req.body); // See if image field is included
-
-  try {
-    const { title, content, author, image } = req.body;
-    const article = new Article({ title, content, author, image });
-    await article.save();
-    res.status(201).json(article);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to add article' });
-  }
-});
-
-
-// GET: All articles
+// GET: All articles (Public)
 app.get('/articles', async (req, res) => {
   try {
     const articles = await Article.find().sort({ createdAt: -1 });
@@ -114,7 +133,7 @@ app.get('/articles', async (req, res) => {
   }
 });
 
-// GET: Single article
+// GET: Single article (Public)
 app.get('/articles/:id', async (req, res) => {
   try {
     const article = await Article.findById(req.params.id);
@@ -125,8 +144,24 @@ app.get('/articles/:id', async (req, res) => {
   }
 });
 
-// PUT: Update article
-app.put('/articles/:id', async (req, res) => {
+// POST: Create article (Protected)
+app.post('/articles', auth, async (req, res) => {
+  try {
+    const { title, content, author, image } = req.body;
+    if (!title || !content) {
+      return res.status(400).json({ error: 'Title and content are required' });
+    }
+    const article = new Article({ title, content, author, image });
+    await article.save();
+    res.status(201).json(article);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to add article' });
+  }
+});
+
+// PUT: Update article (Protected)
+app.put('/articles/:id', auth, async (req, res) => {
   try {
     const { title, content, author, image } = req.body;
     const article = await Article.findByIdAndUpdate(
@@ -141,8 +176,8 @@ app.put('/articles/:id', async (req, res) => {
   }
 });
 
-// DELETE: Remove article
-app.delete('/articles/:id', async (req, res) => {
+// DELETE: Remove article (Protected)
+app.delete('/articles/:id', auth, async (req, res) => {
   try {
     const article = await Article.findByIdAndDelete(req.params.id);
     if (!article) return res.status(404).json({ error: 'Article not found' });
@@ -152,9 +187,53 @@ app.delete('/articles/:id', async (req, res) => {
   }
 });
 
-// --- Product Routes (Optional, clean up if needed) ---
+// --- Product Routes ---
 
-app.post('/products', async (req, res) => {
+// GET: Products with search, filtering, and optional pagination (Public)
+app.get('/products', async (req, res) => {
+  try {
+    const { search, category, page, limit, sort } = req.query;
+    let query = {};
+
+    if (category && category !== 'All') {
+      query.category = category;
+    }
+
+    if (search) {
+      query.$text = { $search: search };
+    }
+
+    // If pagination params are provided
+    if (page && limit) {
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.max(1, parseInt(limit, 10) || 10);
+      const skip = (pageNum - 1) * limitNum;
+
+      const sortOption = sort === 'asc' ? { price: 1 } : sort === 'desc' ? { price: -1 } : { createdAt: -1 };
+
+      const [products, total] = await Promise.all([
+        Product.find(query).sort(sortOption).skip(skip).limit(limitNum),
+        Product.countDocuments(query),
+      ]);
+
+      return res.json({
+        products,
+        total,
+        page: pageNum,
+        totalPages: Math.ceil(total / limitNum),
+      });
+    }
+
+    const products = await Product.find(query).sort({ createdAt: -1 });
+    res.json(products);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
+});
+
+// POST: Add product (Protected)
+app.post('/products', auth, async (req, res) => {
   try {
     const product = new Product(req.body);
     await product.save();
@@ -164,52 +243,45 @@ app.post('/products', async (req, res) => {
   }
 });
 
-app.get('/products', async (req, res) => {
-  try {
-    const products = await Product.find();
-    res.json(products);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch products' });
-  }
-});
-
-app.delete('/products/:id', async (req, res) => {
-  try {
-    await Product.findByIdAndDelete(req.params.id);
-    res.status(204).send();
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to delete product' });
-  }
-});
-
-app.put('/products/:id', async (req, res) => {
+// PUT: Update product (Protected)
+app.put('/products/:id', auth, async (req, res) => {
   try {
     const updated = await Product.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true }
     );
+    if (!updated) return res.status(404).json({ error: 'Product not found' });
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: 'Failed to update product' });
   }
 });
 
+// DELETE: Delete product (Protected)
+app.delete('/products/:id', auth, async (req, res) => {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete product' });
+  }
+});
 
+// --- User Routes (Protected) ---
 
-// --- User Routes ---
-
-app.post('/users', async (req, res) => {
+app.post('/users', auth, async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password)
       return res.status(400).json({ error: 'Username and password required' });
 
-    const existingUser = await User.findOne({ username });
+    const existingUser = await User.findOne({ username: username.trim() });
     if (existingUser)
       return res.status(409).json({ error: 'Username already exists' });
 
-    const user = new User({ username, password });
+    const user = new User({ username: username.trim(), password: password.trim() });
     await user.save();
 
     res.status(201).json({ id: user._id, username: user.username });
@@ -218,7 +290,7 @@ app.post('/users', async (req, res) => {
   }
 });
 
-app.get('/users', async (req, res) => {
+app.get('/users', auth, async (req, res) => {
   try {
     const users = await User.find({}, { password: 0 });
     res.json(users);
@@ -227,7 +299,7 @@ app.get('/users', async (req, res) => {
   }
 });
 
-app.delete('/users/:id', async (req, res) => {
+app.delete('/users/:id', auth, async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -237,32 +309,9 @@ app.delete('/users/:id', async (req, res) => {
   }
 });
 
-// --- Login Route (Simple check, not secure) ---
-app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
+// --- About Routes ---
 
-  try {
-    const user = await User.findOne({ username: username.trim(), password: password.trim() });
-    if (!user) return res.status(401).json({ message: 'Invalid username or password' });
-    res.json({ token: 'dummy-token' });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-//const aboutUpload = multer.diskStorage({
-  //destination: (req, file, cb) => cb(null, 'uploads/about/'),
- // filename: (req, file, cb) =>
-   // cb(null, Date.now() + path.extname(file.originalname)),
-//});
-//const aboutUploader = multer({ storage: aboutUpload });
-
-// Ensure uploads/about directory exists
-//if (!fs.existsSync('uploads/about')) {
- // fs.mkdirSync('uploads/about', { recursive: true });
-//}
-
-// GET current about content
+// GET: Current about content (Public)
 app.get('/about', async (req, res) => {
   try {
     let about = await About.findOne();
@@ -276,16 +325,14 @@ app.get('/about', async (req, res) => {
   }
 });
 
-
-// PUT update about content with Cloudinary upload
-app.put('/about', upload.array('media'), async (req, res) => {
+// PUT: Update about content (Protected)
+app.put('/about', auth, upload.array('media'), async (req, res) => {
   try {
     let about = await About.findOne();
     if (!about) about = new About();
 
     about.text = req.body.text || '';
 
-    // Upload new files
     let uploadedUrls = [];
     if (req.files?.length) {
       uploadedUrls = await Promise.all(
@@ -300,7 +347,6 @@ app.put('/about', upload.array('media'), async (req, res) => {
       );
     }
 
-    // Handle media order
     const mediaOrder = req.body.mediaOrder
       ? Array.isArray(req.body.mediaOrder)
         ? req.body.mediaOrder
@@ -312,7 +358,6 @@ app.put('/about', upload.array('media'), async (req, res) => {
       ...uploadedUrls.filter(url => !mediaOrder.includes(url))
     ];
 
-    // External links (already ordered)
     if (req.body.externalLinks) {
       about.externalLinks = Array.isArray(req.body.externalLinks)
         ? req.body.externalLinks
@@ -327,12 +372,10 @@ app.put('/about', upload.array('media'), async (req, res) => {
   }
 });
 
-
-// DELETE media URL from about.media
-app.delete('/about/media', async (req, res) => {
+// DELETE: Media URL from about.media + Cloudinary deletion (Protected)
+app.delete('/about/media', auth, async (req, res) => {
   try {
-    const { url } = req.body; // URL to delete from media array
-
+    const { url } = req.body;
     if (!url) return res.status(400).json({ error: 'Media URL required' });
 
     const about = await About.findOne();
@@ -341,35 +384,46 @@ app.delete('/about/media', async (req, res) => {
     about.media = about.media.filter(mediaUrl => mediaUrl !== url);
     await about.save();
 
-    // Optionally, delete the image from Cloudinary by public_id if you want.
-    // This requires extracting public_id from the URL.
-    // Example: https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg
-    // public_id = sample (without extension)
-    // You can implement this if needed.
+    // Clean up Cloudinary file
+    const publicId = extractPublicIdFromUrl(url);
+    if (publicId) {
+      cloudinary.uploader.destroy(publicId, (err, result) => {
+        if (err) console.error('Cloudinary destroy error:', err);
+        else console.log('Cloudinary destroy result:', result);
+      });
+    }
 
-    res.status(200).json({ message: 'Media URL removed' });
+    res.status(200).json({ message: 'Media URL removed and asset cleaned from Cloudinary' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to delete media' });
   }
 });
 
+// --- Orders Routes ---
 
-// Orders
-
+// POST: Create Order (Public for customer checkout)
 app.post('/orders', async (req, res) => {
   try {
-    const { customerEmail, items, total } = req.body;
+    const { customerName, customerEmail, customerPhone, shippingAddress, items, total } = req.body;
 
     if (!customerEmail) {
       return res.status(400).json({ error: 'Customer email is required' });
     }
 
+    if (!items || !items.length) {
+      return res.status(400).json({ error: 'Order must contain at least one item' });
+    }
+
     const order = new Order({
+      customerName,
       customerEmail,
+      customerPhone,
+      shippingAddress,
       items,
-      total,
-      status: 'pending', // default
+      total: total || 0,
+      status: 'pending',
+      paymentStatus: 'unpaid',
     });
 
     await order.save();
@@ -380,7 +434,8 @@ app.post('/orders', async (req, res) => {
   }
 });
 
-app.get('/orders', async (req, res) => {
+// GET: All Orders (Protected)
+app.get('/orders', auth, async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
     res.json(orders);
@@ -389,17 +444,34 @@ app.get('/orders', async (req, res) => {
   }
 });
 
-app.put('/orders/:id/status', async (req, res) => {
+// PUT: Update order status & payment status (Protected)
+app.put('/orders/:id/status', auth, async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, paymentStatus, trackingNumber } = req.body;
+    let updateFields = {};
 
-    if (!['pending', 'received', 'sent'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status value' });
+    if (status) {
+      const allowedStatuses = ['pending', 'received', 'processing', 'shipped', 'delivered', 'cancelled', 'sent'];
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({ error: 'Invalid status value' });
+      }
+      updateFields.status = status;
+    }
+
+    if (paymentStatus) {
+      if (!['unpaid', 'paid', 'refunded'].includes(paymentStatus)) {
+        return res.status(400).json({ error: 'Invalid payment status' });
+      }
+      updateFields.paymentStatus = paymentStatus;
+    }
+
+    if (trackingNumber !== undefined) {
+      updateFields.trackingNumber = trackingNumber;
     }
 
     const updatedOrder = await Order.findByIdAndUpdate(
       req.params.id,
-      { status },
+      updateFields,
       { new: true }
     );
 
@@ -414,7 +486,8 @@ app.put('/orders/:id/status', async (req, res) => {
   }
 });
 
-app.delete('/orders/:id', async (req, res) => {
+// DELETE: Order (Protected)
+app.delete('/orders/:id', auth, async (req, res) => {
   try {
     const deletedOrder = await Order.findByIdAndDelete(req.params.id);
 
@@ -427,6 +500,12 @@ app.delete('/orders/:id', async (req, res) => {
     console.error('Error deleting order:', error);
     res.status(500).json({ error: 'Failed to delete order' });
   }
+});
+
+// --- Global Error Handler ---
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: err.message || 'Internal server error' });
 });
 
 // --- Start Server ---
