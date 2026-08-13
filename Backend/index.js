@@ -26,6 +26,11 @@ cloudinary.config({
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Root / Health check route
+app.get('/', (req, res) => {
+  res.status(200).send('Blum Backend is running!');
+});
 // Multer setup for memory storage (to get file buffer directly)
 const upload = multer({ storage: multer.memoryStorage() });
 
