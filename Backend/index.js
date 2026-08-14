@@ -6,6 +6,7 @@ const { v2: cloudinary } = require('cloudinary');
 const streamifier = require('streamifier');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const Product = require('./models/Product');
@@ -23,6 +24,82 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+// --- Nodemailer Transporter Setup ---
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.SMTP_USER || process.env.EMAIL_USER,
+    pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
+  },
+});
+
+// Helper function to send order notification emails
+const sendOrderEmail = async (order) => {
+  const recipientEmail = 'blummtl@gmail.com';
+  
+  const itemsHtml = order.items.map(item => `
+    <tr>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td>
+      <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+      <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">$${item.price}</td>
+    </tr>
+  `).join('');
+
+  const addressString = order.shippingAddress && order.shippingAddress.street
+    ? `${order.shippingAddress.street}, ${order.shippingAddress.city}, ${order.shippingAddress.state} ${order.shippingAddress.zipCode}, ${order.shippingAddress.country}`
+    : 'N/A';
+
+  const mailOptions = {
+    from: `"Blum Store" <${process.env.SMTP_USER || 'no-reply@blum.com'}>`,
+    to: recipientEmail,
+    subject: `🛒 New Order Received! (#${order._id.toString().slice(-6)})`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+        <h2 style="color: #ff7b00; text-align: center;">🌼 New Order Notification - Blum</h2>
+        <p>A new order has just been placed on your website!</p>
+        
+        <h3>Customer Details:</h3>
+        <p><strong>Name:</strong> ${order.customerName || 'N/A'}</p>
+        <p><strong>Email:</strong> ${order.customerEmail}</p>
+        <p><strong>Phone:</strong> ${order.customerPhone || 'N/A'}</p>
+        <p><strong>Shipping Address:</strong> ${addressString}</p>
+        <p><strong>Payment Status:</strong> ${order.paymentStatus || 'unpaid'}</p>
+
+        <h3>Order Items:</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <thead>
+            <tr style="background-color: #f8f8f8;">
+              <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Item</th>
+              <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Qty</th>
+              <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+
+        <h3 style="text-align: right; color: #222;">Total: $${order.total.toFixed(2)}</h3>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+        <p style="font-size: 12px; color: #888; text-align: center;">This notification was automatically sent to blummtl@gmail.com</p>
+      </div>
+    `,
+  };
+
+  try {
+    if (process.env.SMTP_USER || process.env.EMAIL_USER) {
+      await transporter.sendMail(mailOptions);
+      console.log(`✉️ Order email notification sent to ${recipientEmail}`);
+    } else {
+      console.log(`ℹ️ [Email Skipped] SMTP credentials not set in .env. Email body prepared for ${recipientEmail}`);
+    }
+  } catch (err) {
+    console.error('❌ Failed to send order email:', err);
+  }
+};
 
 // --- CORS & Middleware ---
 const allowedOrigins = process.env.ALLOWED_ORIGINS
@@ -58,7 +135,7 @@ const extractPublicIdFromUrl = (url) => {
   try {
     const parts = url.split('/upload/');
     if (parts.length < 2) return null;
-    const pathAndExt = parts[1].replace(/^v\d+\//, ''); // Strip version tag v12345/
+    const pathAndExt = parts[1].replace(/^v\d+\//, '');
     const publicId = pathAndExt.substring(0, pathAndExt.lastIndexOf('.'));
     return publicId;
   } catch (e) {
@@ -103,7 +180,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// --- Image Upload Route (Protected) ---
+// --- Single Image Upload Route (Protected) ---
 app.post('/upload', auth, upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
@@ -119,6 +196,34 @@ app.post('/upload', auth, upload.single('image'), (req, res) => {
   );
 
   streamifier.createReadStream(req.file.buffer).pipe(cld_upload_stream);
+});
+
+// --- Multiple Images Upload Route (Protected) ---
+app.post('/upload-multiple', auth, upload.array('images', 10), async (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: 'No files uploaded' });
+  }
+
+  try {
+    const uploadPromises = req.files.map(file => {
+      return new Promise((resolve, reject) => {
+        const cld_upload_stream = cloudinary.uploader.upload_stream(
+          { folder: 'blum_uploads' },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result.secure_url);
+          }
+        );
+        streamifier.createReadStream(file.buffer).pipe(cld_upload_stream);
+      });
+    });
+
+    const imageUrls = await Promise.all(uploadPromises);
+    res.json({ imageUrls });
+  } catch (error) {
+    console.error('Multiple upload error:', error);
+    res.status(500).json({ error: 'Failed to upload multiple images' });
+  }
 });
 
 // --- Article Routes ---
@@ -203,7 +308,6 @@ app.get('/products', async (req, res) => {
       query.$text = { $search: search };
     }
 
-    // If pagination params are provided
     if (page && limit) {
       const pageNum = Math.max(1, parseInt(page, 10) || 1);
       const limitNum = Math.max(1, parseInt(limit, 10) || 10);
@@ -235,10 +339,18 @@ app.get('/products', async (req, res) => {
 // POST: Add product (Protected)
 app.post('/products', auth, async (req, res) => {
   try {
-    const product = new Product(req.body);
+    const productData = { ...req.body };
+    if (productData.images && productData.images.length > 0 && !productData.imageUrl) {
+      productData.imageUrl = productData.images[0];
+    } else if (productData.imageUrl && (!productData.images || productData.images.length === 0)) {
+      productData.images = [productData.imageUrl];
+    }
+
+    const product = new Product(productData);
     await product.save();
     res.status(201).json(product);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Failed to add product' });
   }
 });
@@ -246,14 +358,22 @@ app.post('/products', auth, async (req, res) => {
 // PUT: Update product (Protected)
 app.put('/products/:id', auth, async (req, res) => {
   try {
+    const productData = { ...req.body };
+    if (productData.images && productData.images.length > 0 && !productData.imageUrl) {
+      productData.imageUrl = productData.images[0];
+    } else if (productData.imageUrl && (!productData.images || productData.images.length === 0)) {
+      productData.images = [productData.imageUrl];
+    }
+
     const updated = await Product.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      productData,
       { new: true }
     );
     if (!updated) return res.status(404).json({ error: 'Product not found' });
     res.json(updated);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Failed to update product' });
   }
 });
@@ -316,7 +436,7 @@ app.get('/about', async (req, res) => {
   try {
     let about = await About.findOne();
     if (!about) {
-      about = new About({ text: '', media: [] });
+      about = new About({ text: '', media: [], projects: [] });
       await about.save();
     }
     res.json(about);
@@ -364,6 +484,16 @@ app.put('/about', auth, upload.array('media'), async (req, res) => {
         : [req.body.externalLinks];
     }
 
+    if (req.body.projects) {
+      try {
+        about.projects = typeof req.body.projects === 'string'
+          ? JSON.parse(req.body.projects)
+          : req.body.projects;
+      } catch (e) {
+        console.error('Error parsing projects:', e);
+      }
+    }
+
     await about.save();
     res.json(about);
   } catch (err) {
@@ -384,7 +514,6 @@ app.delete('/about/media', auth, async (req, res) => {
     about.media = about.media.filter(mediaUrl => mediaUrl !== url);
     await about.save();
 
-    // Clean up Cloudinary file
     const publicId = extractPublicIdFromUrl(url);
     if (publicId) {
       cloudinary.uploader.destroy(publicId, (err, result) => {
@@ -427,6 +556,10 @@ app.post('/orders', async (req, res) => {
     });
 
     await order.save();
+
+    // Trigger order notification email to blummtl@gmail.com
+    sendOrderEmail(order);
+
     res.status(201).json(order);
   } catch (error) {
     console.error('Error creating order:', error);

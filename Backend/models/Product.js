@@ -5,7 +5,8 @@ const ProductSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     price: { type: Number, required: true, min: 0 },
     description: { type: String, trim: true },
-    imageUrl: { type: String, trim: true },
+    imageUrl: { type: String, trim: true }, // Main/Primary image
+    images: { type: [String], default: [] }, // Array of multiple product image URLs
     category: { type: String, trim: true },
     stock: { type: Number, default: 0 },
   },

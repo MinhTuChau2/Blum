@@ -37,6 +37,76 @@
   margin-bottom: 2rem;
 }
 
+/* Projects Section Styles */
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.project-card {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #eaeaea;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.project-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.project-card-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+.project-card-body {
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.project-card-body h4 {
+  font-size: 1.2rem;
+  margin: 0 0 0.5rem 0;
+  color: #222;
+}
+
+.project-card-body p {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+  white-space: normal;
+  flex-grow: 1;
+}
+
+.project-card-link {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 0.4rem 1rem;
+  background-color: #ff7b00;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.project-card-link:hover {
+  background-color: #e06d00;
+}
+
 /* Gallery section */
 .about-container .gallery {
   display: flex;
@@ -95,7 +165,6 @@
   padding: 1rem;
   background: white;
   border-radius: 10px;
-  
 }
 
 /* TikTok */
@@ -124,7 +193,6 @@
   aspect-ratio: 16 / 9;
   border: none;
   border-radius: 8px;
- 
   display: block;
   margin: 0 auto;
   margin-bottom: 1.5rem !important;
@@ -137,7 +205,6 @@
   height: 152px;
   border: none;
   border-radius: 8px;
-
   display: block;
   margin: 0 auto;
   margin-bottom: 1.5rem !important;
