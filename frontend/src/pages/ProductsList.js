@@ -98,24 +98,6 @@ const ProductImageCarousel = ({ images, productName, setZoomImage, isSoldOut }) 
           </>
         )}
       </div>
-
-      {/* Thumbnails list */}
-      {images.length > 1 && (
-        <div className="carousel-thumbnails">
-          {images.map((imgUrl, idx) => (
-            <img
-              key={idx}
-              src={imgUrl}
-              alt={`${productName} thumb ${idx + 1}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveIdx(idx);
-              }}
-              className={`carousel-thumb ${idx === activeIdx ? 'active' : ''}`}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 };
