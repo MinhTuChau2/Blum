@@ -150,7 +150,7 @@ app.get('/', (req, res) => {
   res.status(200).send('Blum Backend is running!');
 });
 
-// --- Login Route (JWT & bcrypt) ---
+// --- Login Route (JWT & bcrypt with plain-text fallback auto-hashing) ---
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -164,7 +164,22 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    const isMatch = await user.comparePassword(password.trim());
+    const trimmedPassword = password.trim();
+    let isMatch = false;
+
+    if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
+      isMatch = await user.comparePassword(trimmedPassword);
+    } else {
+      // If password in DB is stored in plain text, compare directly and auto-hash it
+      if (user.password === trimmedPassword) {
+        isMatch = true;
+        user.password = trimmedPassword;
+        user.markModified('password');
+        await user.save();
+        console.log(`🔒 Auto-hashed plain-text password for user: ${user.username}`);
+      }
+    }
+
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
