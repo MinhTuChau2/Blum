@@ -249,10 +249,31 @@ app.post('/upload-multiple', auth, upload.array('images', 10), async (req, res) 
 // GET: All articles (Public)
 app.get('/articles', async (req, res) => {
   try {
-    const articles = await Article.find().sort({ createdAt: -1 });
+    const articles = await Article.find().sort({ order: 1, createdAt: -1 });
     res.json(articles);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch articles' });
+  }
+});
+
+// PUT: Reorder articles (Protected)
+app.put('/articles/reorder', auth, async (req, res) => {
+  try {
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({ error: 'orderedIds array required' });
+    }
+
+    const updates = orderedIds.map((id, index) =>
+      Article.findByIdAndUpdate(id, { order: index }, { new: true })
+    );
+
+    await Promise.all(updates);
+    const articles = await Article.find().sort({ order: 1, createdAt: -1 });
+    res.json(articles);
+  } catch (err) {
+    console.error('Reorder error:', err);
+    res.status(500).json({ error: 'Failed to reorder articles' });
   }
 });
 

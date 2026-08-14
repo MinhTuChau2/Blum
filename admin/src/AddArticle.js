@@ -124,6 +124,40 @@ const AddArticle = () => {
     setTimeout(() => setMessage(''), 3000);
   };
 
+  const moveArticleUp = async (index) => {
+    if (index === 0) return;
+    const updated = [...articles];
+    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+    setArticles(updated);
+
+    try {
+      const orderedIds = updated.map(a => a._id);
+      await axios.put(`${API_BASE}/articles/reorder`, { orderedIds }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+    } catch (err) {
+      console.error('Failed to save order:', err);
+      fetchArticles();
+    }
+  };
+
+  const moveArticleDown = async (index) => {
+    if (index === articles.length - 1) return;
+    const updated = [...articles];
+    [updated[index + 1], updated[index]] = [updated[index], updated[index + 1]];
+    setArticles(updated);
+
+    try {
+      const orderedIds = updated.map(a => a._id);
+      await axios.put(`${API_BASE}/articles/reorder`, { orderedIds }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+    } catch (err) {
+      console.error('Failed to save order:', err);
+      fetchArticles();
+    }
+  };
+
   return (
     <div style={{ maxWidth: '600px', margin: 'auto', padding: '1rem' }}>
       <h2>{editingId ? 'Edit Article' : 'Add Article'}</h2>
@@ -220,41 +254,67 @@ const AddArticle = () => {
         </div>
       </form>
 
-      <h3>Articles List</h3>
+      <h3>Articles List (Use ↑ and ↓ to Reorder)</h3>
       {articles.length === 0 ? (
         <p>No articles available.</p>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0 }}>
-          {[...articles]
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-            .map((article) => {
-              const itemImages = article.images && article.images.length > 0
-                ? article.images
-                : (article.image ? [article.image] : []);
+          {articles.map((article, index) => {
+            const itemImages = article.images && article.images.length > 0
+              ? article.images
+              : (article.image ? [article.image] : []);
 
-              return (
-                <li key={article._id} style={styles.article}>
-                  <h4>{article.title}</h4>
-                  <p><strong>Author:</strong> {article.author}</p>
-                  
-                  {itemImages.length > 0 && (
-                    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', marginBottom: '1rem' }}>
-                      {itemImages.map((img, idx) => (
-                        <img
-                          key={idx}
-                          src={img}
-                          alt={`${article.title} ${idx + 1}`}
-                          style={{
-                            width: '120px',
-                            height: '90px',
-                            objectFit: 'cover',
-                            borderRadius: '4px',
-                            border: '1px solid #eee'
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )}
+            return (
+              <li key={article._id} style={styles.article}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontWeight: 'bold', background: '#eee', padding: '2px 8px', borderRadius: '4px', fontSize: '0.85rem' }}>
+                      #{index + 1}
+                    </span>
+                    <h4 style={{ margin: 0 }}>{article.title}</h4>
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      type="button"
+                      disabled={index === 0}
+                      onClick={() => moveArticleUp(index)}
+                      style={{ ...styles.moveBtn, opacity: index === 0 ? 0.4 : 1, cursor: index === 0 ? 'not-allowed' : 'pointer' }}
+                      title="Move Article Up"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      disabled={index === articles.length - 1}
+                      onClick={() => moveArticleDown(index)}
+                      style={{ ...styles.moveBtn, opacity: index === articles.length - 1 ? 0.4 : 1, cursor: index === articles.length - 1 ? 'not-allowed' : 'pointer' }}
+                      title="Move Article Down"
+                    >
+                      ↓
+                    </button>
+                  </div>
+                </div>
+
+                <p style={{ margin: '0 0 0.5rem 0' }}><strong>Author:</strong> {article.author}</p>
+                
+                {itemImages.length > 0 && (
+                  <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', marginBottom: '1rem' }}>
+                    {itemImages.map((img, idx) => (
+                      <img
+                        key={idx}
+                        src={img}
+                        alt={`${article.title} ${idx + 1}`}
+                        style={{
+                          width: '120px',
+                          height: '90px',
+                          objectFit: 'cover',
+                          borderRadius: '4px',
+                          border: '1px solid #eee'
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
 
                   {article.content.split('\n\n').map((paragraph, idx) => (
                     <p key={idx}>{paragraph}</p>
@@ -284,6 +344,15 @@ const AddArticle = () => {
 };
 
 const styles = {
+  moveBtn: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '4px',
+    border: '1px solid #ccc',
+    backgroundColor: '#f8f9fa',
+    fontWeight: 'bold',
+    fontSize: '14px',
+  },
   input: {
     display: 'block',
     width: '100%',
