@@ -105,19 +105,33 @@ function AppWrapper() {
   </main>
   </div>
   <footer className="footer">
-  <a
-    href="https://www.instagram.com/blum.mtl/"
-    target="_blank"
-    rel="noopener noreferrer"
-    className="instagram-link"
-  >
-    <img
-      src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png"
-      alt="Instagram"
-      className="instagram-icon"
-    />
-  </a>
-</footer>
+    <a
+      href="https://www.instagram.com/blum.mtl/"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="social-link"
+      title="Instagram"
+    >
+      <img
+        src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png"
+        alt="Instagram"
+        className="social-icon"
+      />
+    </a>
+    <a
+      href="https://www.linkedin.com/in/minhtu-chau/"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="social-link"
+      title="LinkedIn"
+    >
+      <img
+        src="https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png"
+        alt="LinkedIn"
+        className="social-icon"
+      />
+    </a>
+  </footer>
 
   </div>
   
