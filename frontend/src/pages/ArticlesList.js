@@ -3,6 +3,93 @@ import axios from 'axios';
 import './ArticleList.css';
 import Orange from "../assets/ORNGE.png";
 
+const API_BASE = process.env.REACT_APP_API_URL || 'https://blum-backend.onrender.com';
+
+const ArticleImageCarousel = ({ images, title }) => {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [touchStartX, setTouchStartX] = useState(null);
+
+  if (!images || images.length === 0) return null;
+
+  const handleNext = (e) => {
+    e.stopPropagation();
+    setActiveIdx((prev) => (prev + 1) % images.length);
+  };
+
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    setActiveIdx((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+
+    if (diff > 30) {
+      setActiveIdx((prev) => (prev + 1) % images.length);
+    } else if (diff < -30) {
+      setActiveIdx((prev) => (prev - 1 + images.length) % images.length);
+    }
+    setTouchStartX(null);
+  };
+
+  return (
+    <div
+      className="carousel-container"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      style={{ marginBottom: '1rem' }}
+    >
+      <div className="carousel-main-image-wrapper">
+        <img
+          src={images[activeIdx]}
+          alt={`${title} - view ${activeIdx + 1}`}
+          style={{ width: '100%', maxHeight: '420px', objectFit: 'cover', borderRadius: '8px', display: 'block' }}
+        />
+
+        {images.length > 1 && (
+          <>
+            <button
+              type="button"
+              className="carousel-arrow left-arrow"
+              onClick={handlePrev}
+              title="Previous image"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              className="carousel-arrow right-arrow"
+              onClick={handleNext}
+              title="Next image"
+            >
+              ›
+            </button>
+
+            <div className="carousel-dots">
+              {images.map((_, idx) => (
+                <span
+                  key={idx}
+                  className={`carousel-dot ${idx === activeIdx ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveIdx(idx);
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const ArticlesList = () => {
   const [articles, setArticles] = useState([]);
   const [expandedArticleId, setExpandedArticleId] = useState(null);
@@ -10,34 +97,41 @@ const ArticlesList = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
- useEffect(() => {
-  const fetchArticles = async () => {
-    try {
-      setLoading(true);
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        setLoading(true);
 
-      const res = await axios.get('https://blum-backend.onrender.com/articles');
+        const res = await axios.get(`${API_BASE}/articles`);
 
-      const processedArticles = res.data
-        .map(article => ({
-          ...article,
-          image: article.image && !article.image.startsWith('http')
-            ? `https://blum-backend.onrender.com/${article.image}`
-            : article.image
-        }))
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        const processedArticles = res.data
+          .map(article => {
+            const rawImages = article.images && article.images.length > 0
+              ? article.images
+              : (article.image ? [article.image] : []);
 
-      setArticles(processedArticles);
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      setError('Failed to load articles');
-      setLoading(false);
-    }
-  };
+            const formattedImages = rawImages.map(img =>
+              img && !img.startsWith('http') ? `${API_BASE}/${img}` : img
+            );
 
-  fetchArticles();
-}, []);
+            return {
+              ...article,
+              images: formattedImages
+            };
+          })
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
+        setArticles(processedArticles);
+        setLoading(false);
+      } catch (err) {
+        console.error(err);
+        setError('Failed to load articles');
+        setLoading(false);
+      }
+    };
+
+    fetchArticles();
+  }, []);
 
   const toggleExpand = (id) => {
     setExpandedArticleId(prevId => (prevId === id ? null : id));
@@ -69,20 +163,19 @@ const ArticlesList = () => {
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       {loading ? (
-  <div style={{ textAlign: 'center', padding: '2rem' }}>
-    <img
-      src={Orange}
-      alt="Loading..."
-      className="flower-spinner"
-    />
-    <p>Waking up Render server... please wait 🌼</p>
-  </div>
-) : error ? (
-  <p style={{ color: 'red' }}>{error}</p>
-) : filteredArticles.length === 0 ? (
-  <p>No articles found.</p>
-) : (
-
+        <div style={{ textAlign: 'center', padding: '2rem' }}>
+          <img
+            src={Orange}
+            alt="Loading..."
+            className="flower-spinner"
+          />
+          <p>Waking up Render server... please wait 🌼</p>
+        </div>
+      ) : error ? (
+        <p style={{ color: 'red' }}>{error}</p>
+      ) : filteredArticles.length === 0 ? (
+        <p>No articles found.</p>
+      ) : (
         filteredArticles.map(article => {
           const isExpanded = expandedArticleId === article._id;
           const previewContent = article.content.slice(0, 200) + (article.content.length > 200 ? '...' : '');
@@ -92,23 +185,17 @@ const ArticlesList = () => {
               <h3 style={styles.title}>{article.title}</h3>
               <p style={styles.author}><strong>Author:</strong> {article.author}</p>
 
-              {article.image && (
-                <img
-                  src={article.image}
-                  alt={article.title}
-                  style={styles.image}
-                />
-              )}
+              <ArticleImageCarousel images={article.images} title={article.title} />
 
               <div style={styles.content}>
-  {(isExpanded ? article.content : previewContent)
-    .split('\n')
-    .map((para, index) => (
-      <p key={index} style={{ marginBottom: '1em' }}>
-        {para}
-      </p>
-    ))}
-</div>
+                {(isExpanded ? article.content : previewContent)
+                  .split('\n')
+                  .map((para, index) => (
+                    <p key={index} style={{ marginBottom: '1em' }}>
+                      {para}
+                    </p>
+                  ))}
+              </div>
 
               {article.content.length > 200 && (
                 <button onClick={() => toggleExpand(article._id)} style={styles.readMoreBtn}>
@@ -156,13 +243,6 @@ const styles = {
     borderRadius: '4px',
     cursor: 'pointer',
   },
-  image: {
-    width: '100%',
-    height: 'auto',
-    marginBottom: '1rem',
-    borderRadius: '8px',
-    objectFit: 'cover',
-  }
 };
 
 export default ArticlesList;

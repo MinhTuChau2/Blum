@@ -9,7 +9,7 @@ const AddArticle = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [author, setAuthor] = useState('');
-  const [image, setImage] = useState('');
+  const [images, setImages] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState('');
@@ -27,26 +27,32 @@ const AddArticle = () => {
     }
   };
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleMultipleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
     const formData = new FormData();
-    formData.append('image', file);
+    files.forEach(file => formData.append('images', file));
 
     setIsUploading(true);
     try {
-      const res = await axios.post(`${API_BASE}/upload`, formData, {
+      const res = await axios.post(`${API_BASE}/upload-multiple`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setImage(res.data.imageUrl);
-      setMessage('✅ Image uploaded successfully');
+      const newUrls = res.data.imageUrls || [];
+      setImages(prev => [...prev, ...newUrls]);
+      setMessage('✅ Image(s) uploaded successfully');
     } catch (err) {
       console.error('Image upload failed:', err);
-      setMessage('❌ Failed to upload image');
+      setMessage('❌ Failed to upload image(s)');
     } finally {
       setIsUploading(false);
       setTimeout(() => setMessage(''), 3000);
     }
+  };
+
+  const removeImage = (indexToRemove) => {
+    setImages(prev => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleEdit = (article) => {
@@ -54,7 +60,10 @@ const AddArticle = () => {
     setTitle(article.title || '');
     setAuthor(article.author || '');
     setContent(article.content || '');
-    setImage(article.image || '');
+    const existing = article.images && article.images.length > 0
+      ? article.images
+      : (article.image ? [article.image] : []);
+    setImages(existing);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -63,14 +72,14 @@ const AddArticle = () => {
     setTitle('');
     setAuthor('');
     setContent('');
-    setImage('');
+    setImages([]);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (isUploading) {
-      setMessage('⏳ Please wait until the image is done uploading...');
+      setMessage('⏳ Please wait until images finish uploading...');
       return;
     }
 
@@ -78,7 +87,8 @@ const AddArticle = () => {
       title,
       content,
       author,
-      image: image || '',
+      image: images[0] || '',
+      images: images,
     };
 
     try {
@@ -140,19 +150,57 @@ const AddArticle = () => {
           onChange={(e) => setAuthor(e.target.value)}
           style={styles.input}
         />
+
+        <label style={{ fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '4px', display: 'block' }}>
+          Article Images (Upload Multiple):
+        </label>
         <input
           type="file"
           accept="image/*"
-          onChange={handleImageUpload}
+          multiple
+          onChange={handleMultipleImageUpload}
           style={styles.input}
+          disabled={isUploading}
         />
-        {isUploading && <p style={{ fontSize: '0.9rem', color: 'orange' }}>⏳ Uploading image...</p>}
-        {image && !isUploading && (
-          <div style={{ marginBottom: '1rem' }}>
-            <p style={{ fontSize: '0.9rem', color: 'green' }}>✅ Image set</p>
-            <img src={image} alt="Preview" style={{ width: '100px', height: '80px', objectFit: 'cover', borderRadius: '4px' }} />
+        {isUploading && <p style={{ fontSize: '0.9rem', color: 'orange' }}>⏳ Uploading image(s)...</p>}
+
+        {images.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '1rem' }}>
+            {images.map((imgUrl, idx) => (
+              <div key={idx} style={{ position: 'relative', width: '70px', height: '70px' }}>
+                <img
+                  src={imgUrl}
+                  alt={`Preview ${idx + 1}`}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: idx === 0 ? '2px solid #007bff' : '1px solid #ccc' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(idx)}
+                  style={{
+                    position: 'absolute',
+                    top: '-5px',
+                    right: '-5px',
+                    background: 'red',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '18px',
+                    height: '18px',
+                    fontSize: '10px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  title="Remove image"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
           </div>
         )}
+
         <textarea
           placeholder="Content"
           value={content}
@@ -179,43 +227,56 @@ const AddArticle = () => {
         <ul style={{ listStyle: 'none', padding: 0 }}>
           {[...articles]
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-            .map((article) => (
-              <li key={article._id} style={styles.article}>
-                <h4>{article.title}</h4>
-                <p><strong>Author:</strong> {article.author}</p>
-                {article.image && (
-                  <img
-                    src={article.image}
-                    alt={article.title}
-                    style={{
-                      width: '100%',
-                      maxHeight: '250px',
-                      objectFit: 'cover',
-                      marginBottom: '1rem',
-                      borderRadius: '4px',
-                    }}
-                  />
-                )}
-                {article.content.split('\n\n').map((paragraph, idx) => (
-                  <p key={idx}>{paragraph}</p>
-                ))}
+            .map((article) => {
+              const itemImages = article.images && article.images.length > 0
+                ? article.images
+                : (article.image ? [article.image] : []);
 
-                <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
-                  <button
-                    onClick={() => handleEdit(article)}
-                    style={styles.editButton}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(article._id)}
-                    style={styles.deleteButton}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </li>
-            ))}
+              return (
+                <li key={article._id} style={styles.article}>
+                  <h4>{article.title}</h4>
+                  <p><strong>Author:</strong> {article.author}</p>
+                  
+                  {itemImages.length > 0 && (
+                    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', marginBottom: '1rem' }}>
+                      {itemImages.map((img, idx) => (
+                        <img
+                          key={idx}
+                          src={img}
+                          alt={`${article.title} ${idx + 1}`}
+                          style={{
+                            width: '120px',
+                            height: '90px',
+                            objectFit: 'cover',
+                            borderRadius: '4px',
+                            border: '1px solid #eee'
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {article.content.split('\n\n').map((paragraph, idx) => (
+                    <p key={idx}>{paragraph}</p>
+                  ))}
+
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
+                    <button
+                      onClick={() => handleEdit(article)}
+                      style={styles.editButton}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(article._id)}
+                      style={styles.deleteButton}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
         </ul>
       )}
     </div>

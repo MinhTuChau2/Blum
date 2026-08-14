@@ -270,11 +270,14 @@ app.get('/articles/:id', async (req, res) => {
 // POST: Create article (Protected)
 app.post('/articles', auth, async (req, res) => {
   try {
-    const { title, content, author, image } = req.body;
+    const { title, content, author, image, images } = req.body;
     if (!title || !content) {
       return res.status(400).json({ error: 'Title and content are required' });
     }
-    const article = new Article({ title, content, author, image });
+    const finalImages = Array.isArray(images) && images.length > 0 ? images : (image ? [image] : []);
+    const mainImage = finalImages[0] || image || '';
+
+    const article = new Article({ title, content, author, image: mainImage, images: finalImages });
     await article.save();
     res.status(201).json(article);
   } catch (err) {
@@ -286,10 +289,13 @@ app.post('/articles', auth, async (req, res) => {
 // PUT: Update article (Protected)
 app.put('/articles/:id', auth, async (req, res) => {
   try {
-    const { title, content, author, image } = req.body;
+    const { title, content, author, image, images } = req.body;
+    const finalImages = Array.isArray(images) && images.length > 0 ? images : (image ? [image] : []);
+    const mainImage = finalImages[0] || image || '';
+
     const article = await Article.findByIdAndUpdate(
       req.params.id,
-      { title, content, author, image },
+      { title, content, author, image: mainImage, images: finalImages },
       { new: true }
     );
     if (!article) return res.status(404).json({ error: 'Article not found' });

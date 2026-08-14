@@ -6,6 +6,7 @@ const articleSchema = new mongoose.Schema(
     author: String,
     content: String,
     image: String,
+    images: { type: [String], default: [] },
   },
   {
     timestamps: true, // ✅ Adds createdAt and updatedAt

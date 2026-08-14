@@ -169,36 +169,6 @@ const About = () => {
         <>
           <p style={{ whiteSpace: 'pre-line' }}>{text}</p>
 
-          {/* My Projects Section - Rendered ABOVE Gallery */}
-          {projects && projects.length > 0 && (
-            <>
-              <h3>My Projects</h3>
-              <div className="projects-grid">
-                {projects.map((proj, index) => (
-                  <div key={index} className="project-card">
-                    {proj.image && (
-                      <img src={proj.image} alt={proj.title} className="project-card-image" />
-                    )}
-                    <div className="project-card-body">
-                      <h4>{proj.title}</h4>
-                      {proj.description && <p>{proj.description}</p>}
-                      {proj.link && (
-                        <a
-                          href={proj.link.startsWith('http') ? proj.link : `https://${proj.link}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="project-card-link"
-                        >
-                          View Project →
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
           {/* Gallery Section */}
           {media.length > 0 && (
             <>
