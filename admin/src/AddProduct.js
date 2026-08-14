@@ -11,7 +11,8 @@ const AddProduct = () => {
     description: '',
     imageUrl: '',
     images: [],
-    category: ''
+    category: '',
+    isSoldOut: false
   });
 
   const [products, setProducts] = useState([]);
@@ -33,7 +34,8 @@ const AddProduct = () => {
   }, []);
 
   const handleChange = e => {
-    setProduct({ ...product, [e.target.name]: e.target.value });
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    setProduct({ ...product, [e.target.name]: value });
   };
 
   const handleEdit = (p) => {
@@ -44,7 +46,8 @@ const AddProduct = () => {
       description: p.description || '',
       imageUrl: p.imageUrl || (existingImages[0] || ''),
       images: existingImages,
-      category: p.category || ''
+      category: p.category || '',
+      isSoldOut: !!p.isSoldOut
     });
     setEditingId(p._id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -58,8 +61,19 @@ const AddProduct = () => {
       description: '',
       imageUrl: '',
       images: [],
-      category: ''
+      category: '',
+      isSoldOut: false
     });
+  };
+
+  const handleToggleSoldOut = async (p) => {
+    try {
+      const updated = { ...p, isSoldOut: !p.isSoldOut };
+      await axios.put(`${API_BASE}/products/${p._id}`, updated);
+      fetchProducts();
+    } catch (error) {
+      alert('❌ Failed to update status');
+    }
   };
 
   const handleMultipleImageUpload = async (e) => {
@@ -117,7 +131,8 @@ const AddProduct = () => {
         ...product, 
         price: product.price ? Number(product.price) : 0,
         images: finalImages,
-        imageUrl: finalImages[0] || product.imageUrl || ''
+        imageUrl: finalImages[0] || product.imageUrl || '',
+        isSoldOut: !!product.isSoldOut
       };
 
       if (editingId) {
@@ -184,7 +199,20 @@ const AddProduct = () => {
               placeholder="Category (e.g. Clothes, Art, Accessories)"
             />
 
-            <label style={{ fontWeight: 'bold', marginTop: '10px', display: 'block' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px', cursor: 'pointer', padding: '8px 12px', background: product.isSoldOut ? '#fff0f0' : '#f0fff0', borderRadius: '6px', border: `1px solid ${product.isSoldOut ? '#ffcdd2' : '#c8e6c9'}` }}>
+              <input
+                type="checkbox"
+                name="isSoldOut"
+                checked={!!product.isSoldOut}
+                onChange={handleChange}
+                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+              />
+              <span style={{ fontWeight: 'bold', color: product.isSoldOut ? '#d32f2f' : '#2e7d32', fontSize: '0.95rem' }}>
+                {product.isSoldOut ? '🔴 Product is SOLD OUT' : '🟢 Product is IN STOCK'}
+              </span>
+            </label>
+
+            <label style={{ fontWeight: 'bold', marginTop: '14px', display: 'block' }}>
               Product Images (Upload Multiple):
             </label>
             <input
@@ -262,10 +290,10 @@ const AddProduct = () => {
               {products.map(p => {
                 const itemImages = p.images && p.images.length > 0 ? p.images : (p.imageUrl ? [p.imageUrl] : []);
                 return (
-                  <li key={p._id} className="product-item">
+                  <li key={p._id} className="product-item" style={{ borderLeft: p.isSoldOut ? '5px solid #d32f2f' : '5px solid #2e7d32' }}>
                     {itemImages.length > 0 && (
                       <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                        <img src={itemImages[0]} alt={p.name} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px' }} />
+                        <img src={itemImages[0]} alt={p.name} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px', filter: p.isSoldOut ? 'grayscale(50%)' : 'none' }} />
                         {itemImages.length > 1 && (
                           <span style={{ fontSize: '0.75rem', background: '#eee', padding: '2px 6px', borderRadius: '10px' }}>
                             +{itemImages.length - 1} more
@@ -276,11 +304,31 @@ const AddProduct = () => {
                     <div className="product-info">
                       <div>
                         <strong>{p.name}</strong>
+                        {p.isSoldOut && (
+                          <span style={{ background: '#d32f2f', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', marginLeft: '8px' }}>
+                            SOLD OUT
+                          </span>
+                        )}
                         <span className="price">${p.price}</span>
                         <span className="category">{p.category}</span>
                       </div>
                       <small>{p.description}</small>
                     </div>
+                    <button
+                      onClick={() => handleToggleSoldOut(p)}
+                      style={{
+                        backgroundColor: p.isSoldOut ? '#28a745' : '#dc3545',
+                        color: 'white',
+                        padding: '4px 8px',
+                        fontSize: '0.8rem',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                      title="Quick toggle status"
+                    >
+                      {p.isSoldOut ? 'Mark In Stock' : 'Mark Sold Out'}
+                    </button>
                     <button onClick={() => handleEdit(p)}>Edit</button>
                     <button onClick={() => handleDelete(p._id)}>Delete</button>
                   </li>

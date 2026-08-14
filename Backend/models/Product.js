@@ -9,6 +9,7 @@ const ProductSchema = new mongoose.Schema(
     images: { type: [String], default: [] }, // Array of multiple product image URLs
     category: { type: String, trim: true },
     stock: { type: Number, default: 0 },
+    isSoldOut: { type: Boolean, default: false },
   },
   {
     timestamps: true,

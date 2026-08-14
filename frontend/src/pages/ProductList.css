@@ -88,18 +88,156 @@
 }
 
 .add-btn {
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.2rem;
   background-color: black;
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.2s ease;
   font-weight: bold;
+  width: 100%;
+  margin-top: 10px;
 }
 
 .add-btn:hover {
   background-color: #27ae60;
+}
+
+/* Disabled button when Sold Out */
+.add-btn.disabled-btn {
+  background-color: #888888 !important;
+  color: #ffffff !important;
+  cursor: not-allowed !important;
+  opacity: 0.75;
+}
+
+.add-btn.disabled-btn:hover {
+  background-color: #888888 !important;
+}
+
+/* Sold Out Product Card */
+.product-card.sold-out-card {
+  opacity: 0.9;
+  border: 2px solid #e0e0e0;
+}
+
+/* Image Carousel & Slider */
+.carousel-container {
+  margin: 10px 0;
+  user-select: none;
+}
+
+.carousel-main-image-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8f8f8;
+}
+
+/* Sold Out Overlay Badge */
+.sold-out-overlay {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(211, 47, 47, 0.92);
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  z-index: 5;
+}
+
+/* Carousel Swipe Arrows */
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.carousel-arrow:hover {
+  background: rgba(0, 0, 0, 0.85);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-arrow.left-arrow {
+  left: 8px;
+}
+
+.carousel-arrow.right-arrow {
+  right: 8px;
+}
+
+/* Dots Indicator */
+.carousel-dots {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  z-index: 10;
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.carousel-dot.active {
+  background: #ffffff;
+  width: 18px;
+  border-radius: 4px;
+}
+
+/* Carousel Thumbnails Strip */
+.carousel-thumbnails {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.carousel-thumb {
+  width: 46px;
+  height: 46px;
+  object-fit: cover;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.carousel-thumb.active {
+  border: 2px solid #000000;
+  opacity: 1;
+  transform: scale(1.05);
 }
 .main-content {
   display: flex;

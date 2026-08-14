@@ -6,58 +6,152 @@ import Orange from "../assets/ORNGE.png";
 
 const API_BASE = process.env.REACT_APP_API_URL || 'https://blum-backend.onrender.com';
 
+const ProductImageCarousel = ({ images, productName, setZoomImage, isSoldOut }) => {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [touchStartX, setTouchStartX] = useState(null);
+
+  if (!images || images.length === 0) return null;
+
+  const handleNext = (e) => {
+    e.stopPropagation();
+    setActiveIdx((prev) => (prev + 1) % images.length);
+  };
+
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    setActiveIdx((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+
+    if (diff > 30) {
+      // Swipe left -> Next
+      setActiveIdx((prev) => (prev + 1) % images.length);
+    } else if (diff < -30) {
+      // Swipe right -> Prev
+      setActiveIdx((prev) => (prev - 1 + images.length) % images.length);
+    }
+    setTouchStartX(null);
+  };
+
+  return (
+    <div
+      className="carousel-container"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div className="carousel-main-image-wrapper">
+        <img
+          src={images[activeIdx]}
+          alt={`${productName} - view ${activeIdx + 1}`}
+          className="product-image"
+          style={{ filter: isSoldOut ? 'grayscale(35%) opacity(0.8)' : 'none' }}
+          onClick={() => setZoomImage(images[activeIdx])}
+        />
+
+        {/* Sold Out Overlay Badge */}
+        {isSoldOut && (
+          <div className="sold-out-overlay">
+            <span>SOLD OUT</span>
+          </div>
+        )}
+
+        {/* Swipe Arrows for multiple images */}
+        {images.length > 1 && (
+          <>
+            <button
+              type="button"
+              className="carousel-arrow left-arrow"
+              onClick={handlePrev}
+              title="Previous image"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              className="carousel-arrow right-arrow"
+              onClick={handleNext}
+              title="Next image"
+            >
+              ›
+            </button>
+
+            <div className="carousel-dots">
+              {images.map((_, idx) => (
+                <span
+                  key={idx}
+                  className={`carousel-dot ${idx === activeIdx ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveIdx(idx);
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Thumbnails list */}
+      {images.length > 1 && (
+        <div className="carousel-thumbnails">
+          {images.map((imgUrl, idx) => (
+            <img
+              key={idx}
+              src={imgUrl}
+              alt={`${productName} thumb ${idx + 1}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveIdx(idx);
+              }}
+              className={`carousel-thumb ${idx === activeIdx ? 'active' : ''}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ProductCard = ({ product, addToCart, setZoomImage }) => {
   const images = product.images && product.images.length > 0
     ? product.images
     : (product.imageUrl ? [product.imageUrl] : []);
 
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-
-  const currentImage = images[activeImageIndex] || product.imageUrl;
+  const isSoldOut = !!product.isSoldOut;
 
   return (
-    <li>
+    <li className={`product-card ${isSoldOut ? 'sold-out-card' : ''}`}>
       <h3>{product.name}</h3>
-      <p style={{ fontWeight: 'bold', color: '#ff7b00', fontSize: '1.1rem' }}>${product.price}</p>
-      <p>{product.description}</p>
+      <p style={{ fontWeight: 'bold', color: '#000000', fontSize: '1.2rem', margin: '4px 0' }}>
+        ${typeof product.price === 'number' ? product.price.toFixed(2) : product.price}
+      </p>
+      <p style={{ color: '#555', fontSize: '0.95rem' }}>{product.description}</p>
 
-      {currentImage && (
-        <img
-          src={currentImage}
-          alt={product.name}
-          className="product-image"
-          style={{ cursor: 'zoom-in' }}
-          onClick={() => setZoomImage(currentImage)}
-        />
-      )}
+      <ProductImageCarousel
+        images={images}
+        productName={product.name}
+        setZoomImage={setZoomImage}
+        isSoldOut={isSoldOut}
+      />
 
-      {/* Multiple Image Thumbnails */}
-      {images.length > 1 && (
-        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', margin: '8px 0' }}>
-          {images.map((imgUrl, idx) => (
-            <img
-              key={idx}
-              src={imgUrl}
-              alt={`${product.name} thumbnail ${idx + 1}`}
-              onClick={() => setActiveImageIndex(idx)}
-              style={{
-                width: '45px',
-                height: '45px',
-                objectFit: 'cover',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                border: idx === activeImageIndex ? '2px solid #ff7b00' : '1px solid #ddd',
-                opacity: idx === activeImageIndex ? 1 : 0.6,
-                transition: 'all 0.2s ease'
-              }}
-            />
-          ))}
-        </div>
-      )}
+      <p style={{ fontSize: '0.85rem', color: '#666', marginTop: '8px' }}>
+        Category: {product.category || 'General'}
+      </p>
 
-      <p style={{ fontSize: '0.85rem', color: '#666' }}>Category: {product.category || 'General'}</p>
-      <button className="add-btn" onClick={() => addToCart(product)}>
-        Add to Cart
+      <button
+        className={`add-btn ${isSoldOut ? 'disabled-btn' : ''}`}
+        onClick={() => !isSoldOut && addToCart(product)}
+        disabled={isSoldOut}
+      >
+        {isSoldOut ? 'Sold Out' : 'Add to Cart'}
       </button>
     </li>
   );
@@ -105,6 +199,8 @@ const ProductsList = () => {
 
   // Add to cart
   const addToCart = (product) => {
+    if (product.isSoldOut) return; // Do not add sold out items to cart
+
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item._id === product._id);
       if (existingItem) {
