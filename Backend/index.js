@@ -123,12 +123,14 @@ app.use(express.json());
 const upload = multer({ storage: multer.memoryStorage() });
 
 // --- MongoDB Connection ---
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ MongoDB connected'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
+if (process.env.MONGO_URI) {
+  mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('✅ MongoDB connected'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
+} else {
+  console.warn('⚠️  [Warning] MONGO_URI is not set in environment variables or .env file.');
+  console.warn('⚠️  Please create Backend/.env with MONGO_URI to connect to your database.');
+}
 
 // --- Helper: Extract Cloudinary Public ID ---
 const extractPublicIdFromUrl = (url) => {
