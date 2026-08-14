@@ -32,19 +32,26 @@ cloudinary.config({
 });
 
 // --- Nodemailer Transporter Setup ---
+const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+const smtpSecure = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : smtpPort === 465;
+
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  family: 4,
+  host: smtpHost,
+  port: smtpPort,
+  secure: smtpSecure, // false for 587 (STARTTLS), true for 465 (SSL/TLS)
+  family: 4, // Force IPv4 to prevent ENETUNREACH on Render/cloud containers without IPv6
   auth: {
     user: process.env.SMTP_USER || process.env.EMAIL_USER,
     pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
   },
-  connectionTimeout: 10000,
-  greetingTimeout: 5000,
-  socketTimeout: 10000,
+  tls: {
+    rejectUnauthorized: false,
+    servername: smtpHost,
+  },
+  connectionTimeout: 15000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
 });
 
 // Helper function to send order notification emails
