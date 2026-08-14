@@ -7,7 +7,13 @@ const streamifier = require('streamifier');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
+const dns = require('dns');
 require('dotenv').config();
+
+// Force IPv4 DNS resolution order to prevent IPv6 ENETUNREACH errors
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 const Product = require('./models/Product');
 const Article = require('./models/Article');
@@ -28,6 +34,10 @@ cloudinary.config({
 // --- Nodemailer Transporter Setup ---
 const transporter = nodemailer.createTransport({
   service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  family: 4,
   auth: {
     user: process.env.SMTP_USER || process.env.EMAIL_USER,
     pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
