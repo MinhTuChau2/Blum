@@ -30,6 +30,20 @@ function AddAbout() {
     });
   };
 
+  const handleRemoveLink = (index) => {
+    setExternalLinks((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const getPlatformBadge = (url) => {
+    if (!url) return null;
+    const lower = url.toLowerCase();
+    if (lower.includes('spotify.com')) return { label: '🎵 Spotify', color: '#1db954' };
+    if (lower.includes('tiktok.com')) return { label: '🎥 TikTok', color: '#000000' };
+    if (lower.includes('instagram.com')) return { label: '📸 Instagram', color: '#e1306c' };
+    if (lower.includes('youtube.com') || lower.includes('youtu.be')) return { label: '▶️ YouTube', color: '#ff0000' };
+    return { label: '🔗 Link', color: '#666666' };
+  };
+
   // Move media up/down
   const moveMediaUp = (index) => {
     if (index === 0) return;
@@ -56,8 +70,7 @@ function AddAbout() {
         const res = await axios.get(`${API_BASE}/about`);
         setText(res.data.text || '');
         setMedia(res.data.media || []);
-        setExternalLinks(res.data.externalLinks || ['']);
-        setProjects(res.data.projects || []);
+        setExternalLinks(res.data.externalLinks && res.data.externalLinks.length > 0 ? res.data.externalLinks : ['']);
       } catch (err) {
         console.error('Error loading about:', err);
       }
@@ -97,8 +110,7 @@ function AddAbout() {
 
       setMedia(res.data.media || []);
       setText(res.data.text || '');
-      setExternalLinks(res.data.externalLinks || []);
-      setProjects(res.data.projects || []);
+      setExternalLinks(res.data.externalLinks && res.data.externalLinks.length > 0 ? res.data.externalLinks : ['']);
       setNewFiles([]);
       setLoading(false);
       alert('About section updated!');
@@ -138,27 +150,74 @@ function AddAbout() {
         </div>
 
         {/* External Links */}
-        <div className="form-group">
-          <label>Add external media links:</label>
-          {externalLinks.map((link, index) => (
-            <div key={index} style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem' }}>
-              <input
-                type="text"
-                placeholder="link..."
-                value={link}
-                onChange={(e) => {
-                  const newLinks = [...externalLinks];
-                  newLinks[index] = e.target.value;
-                  setExternalLinks(newLinks);
-                }}
-                style={{ flexGrow: 1 }}
-              />
-              <button type="button" disabled={index === 0} onClick={() => moveLinkUp(index)}>↑</button>
-              <button type="button" disabled={index === externalLinks.length - 1} onClick={() => moveLinkDown(index)}>↓</button>
-            </div>
-          ))}
-          <button type="button" onClick={() => setExternalLinks([...externalLinks, ''])}>
-            + Add Another Link
+        <div className="form-group external-links-section">
+          <label className="section-label">External Media Links (TikTok, Instagram, Spotify, YouTube):</label>
+          
+          <div className="external-links-list">
+            {externalLinks.map((link, index) => {
+              const platform = getPlatformBadge(link);
+              return (
+                <div key={index} className="external-link-card">
+                  <span className="link-number">#{index + 1}</span>
+                  
+                  <div className="link-input-wrapper">
+                    <input
+                      type="text"
+                      placeholder="Paste link (e.g. https://open.spotify.com/..., https://tiktok.com/...)"
+                      value={link}
+                      onChange={(e) => {
+                        const newLinks = [...externalLinks];
+                        newLinks[index] = e.target.value;
+                        setExternalLinks(newLinks);
+                      }}
+                      className="link-input"
+                    />
+                    {platform && link.trim() !== '' && (
+                      <span className="platform-tag" style={{ backgroundColor: platform.color }}>
+                        {platform.label}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="link-actions">
+                    <button
+                      type="button"
+                      className="arrow-btn"
+                      disabled={index === 0}
+                      onClick={() => moveLinkUp(index)}
+                      title="Move Up"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className="arrow-btn"
+                      disabled={index === externalLinks.length - 1}
+                      onClick={() => moveLinkDown(index)}
+                      title="Move Down"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      className="delete-link-btn"
+                      onClick={() => handleRemoveLink(index)}
+                      title="Remove Link"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            className="add-link-btn"
+            onClick={() => setExternalLinks([...externalLinks, ''])}
+          >
+            + Add Another External Link
           </button>
         </div>
 
@@ -173,7 +232,7 @@ function AddAbout() {
           />
         </div>
 
-        <button type="submit" disabled={loading}>
+        <button type="submit" className="submit-button" disabled={loading}>
           {loading ? 'Saving...' : 'Save All Changes'}
         </button>
       </form>
